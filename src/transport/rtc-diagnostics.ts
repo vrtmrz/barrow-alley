@@ -47,6 +47,8 @@ export type RtcDiagnosticEvent =
       readonly iceConnectionState: RTCIceConnectionState;
       readonly history: RtcStateHistory;
       readonly totals: {
+        /** RTCPeerConnection instances created for this room. */
+        readonly attempted: number;
         readonly connected: number;
         readonly failed: number;
         readonly closed: number;
@@ -128,7 +130,7 @@ export function createDiagnosticRTCPeerConnectionConstructor(
         connectionState: this.connectionState,
         iceConnectionState: this.iceConnectionState,
         history: this.#historySnapshot(),
-        totals: { connected, failed, closed },
+        totals: { attempted: instanceCounter, connected, failed, closed },
       });
     }
 

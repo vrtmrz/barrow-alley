@@ -493,6 +493,9 @@ They must not expose SDP, candidate addresses, candidate IDs, raw `getStats()`
 reports, Vault information, or file metadata. Observer failures must not alter
 the WebRTC lifecycle. A diagnostic can explain a failed direct connection, but
 must not claim that relay availability alone proves end-to-end connectivity.
+The sender's waiting dialogue may show a sanitised connection-attempt count,
+state summary, and failure explanation. Keep this display separate from the
+protocol session state so diagnostic delivery cannot control pitch behaviour.
 
 ## 6.4 STUN and TURN
 

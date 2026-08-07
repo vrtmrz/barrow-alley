@@ -10,7 +10,7 @@ The current implementation supports files up to 100 MiB each. It reads one compl
 
 The plug-in settings and browser interoperability client accept one `wss://` Nostr relay URL per line. The displayed list is the complete effective list for each new pitch; blank lines and exact duplicates are removed, and an existing pitch keeps its original relay snapshot. The sender and visitor need at least one usable relay in common. Nostr relays carry discovery and signalling data, while file content uses the direct WebRTC connection.
 
-The Obsidian sender uses local WebRTC state and aggregate connection counters to explain direct-connection failures. These diagnostics do not include SDP, candidate addresses, candidate IDs, raw WebRTC statistics, Vault information, or file metadata.
+The Obsidian sender's waiting dialogue uses local WebRTC state and aggregate connection counters to show direct-connection attempts, progress, and failures. These diagnostics do not include SDP, candidate addresses, candidate IDs, raw WebRTC statistics, Vault information, or file metadata.
 
 This repository also contains a small browser interoperability client under `test/web`. It is used to test the Barrow Alley protocol without Obsidian and is published as a convenience client.
 

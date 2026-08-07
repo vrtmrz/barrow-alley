@@ -9,6 +9,10 @@ import type { SenderState } from "../core/session/state.js";
 import type { Source } from "../core/files.js";
 import type { TransferProgress } from "../core/transfer/progress.js";
 import type { Transport } from "../transport/transport.js";
+import type {
+  RtcDiagnosticEvent,
+  RtcDiagnosticObserver,
+} from "../transport/rtc-diagnostics.js";
 import type { TrysteroTransportOptions } from "../transport/trystero-transport.js";
 
 /** Immutable sender information shown by the persistent pitch UI. */
@@ -35,11 +39,16 @@ export interface SenderPitchView {
   close(): void;
   setState(state: SenderState): void;
   setProgress(progress: TransferProgress): void;
+  /** Shows sanitised direct-connection progress without changing session state. */
+  setRtcDiagnostic(event: RtcDiagnosticEvent): void;
 }
 
 export interface SenderPitchControllerOptions {
   /** Creates the one transport owned by each new pitch. */
-  readonly createTransport: (options: TrysteroTransportOptions) => Promise<Transport>;
+  readonly createTransport: (
+    options: TrysteroTransportOptions,
+    onRtcDiagnostic: RtcDiagnosticObserver,
+  ) => Promise<Transport>;
   /** Creates the persistent host UI for a prepared pitch. */
   readonly createView: (
     model: SenderPitchViewModel,
@@ -102,18 +111,30 @@ export class SenderPitchController {
     const pitchNumber = (this.#options.generateNumber ?? generatePitchNumber)();
     const credentials = await derivePitchCredentials(pitchNumber);
     this.#assertRunning();
-    const transport = await this.#options.createTransport({
-      roomId: credentials.roomId,
-      password: credentials.password,
-      relays: [...relaySettings.relays],
-    });
+    let view: SenderPitchView | undefined;
+    let viewOpened = false;
+    let latestRtcDiagnostic: RtcDiagnosticEvent | undefined;
+    const transport = await this.#options.createTransport(
+      {
+        roomId: credentials.roomId,
+        password: credentials.password,
+        relays: [...relaySettings.relays],
+      },
+      (event) => {
+        latestRtcDiagnostic = event;
+        // Ignore late close events once this pitch no longer owns the view.
+        const currentView = view;
+        if (viewOpened && currentView !== undefined && this.#active?.view === currentView) {
+          currentView.setRtcDiagnostic(event);
+        }
+      },
+    );
     if (this.#shutDown) {
       await transport.close();
       throw controllerShutDownError();
     }
 
     let session: SenderSession | undefined;
-    let view: SenderPitchView;
     try {
       const actions: SenderPitchViewActions = {
         onAccept: async () => requireSession(session).accept(),
@@ -123,22 +144,23 @@ export class SenderPitchController {
           await this.#enqueue(async () => this.#performClose(current, false));
         },
       };
-      view = this.#options.createView(
+      const pitchView = this.#options.createView(
         {
           pitchNumber: formatPitchNumber(pitchNumber),
           files: sourceItems.map(({ displayName }) => displayName),
         },
         actions,
       );
+      view = pitchView;
       session = new SenderSession({
         sessionId: (this.#options.createSessionId ?? createSessionId)(),
         source,
         transport,
         onStateChange(state) {
-          view.setState(state);
+          pitchView.setState(state);
         },
         onProgress(progress) {
-          view.setProgress(progress);
+          pitchView.setProgress(progress);
         },
       });
     } catch (error) {
@@ -150,6 +172,10 @@ export class SenderPitchController {
     this.#active = active;
     try {
       view.open();
+      viewOpened = true;
+      if (latestRtcDiagnostic !== undefined) {
+        view.setRtcDiagnostic(latestRtcDiagnostic);
+      }
       await session.start();
       this.#assertRunning();
       return pitchNumber;

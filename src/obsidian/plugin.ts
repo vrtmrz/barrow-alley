@@ -1,4 +1,4 @@
-import { Notice, Plugin, type TFile } from "obsidian";
+import { Plugin, type TFile } from "obsidian";
 import { confirmAction } from "@vrtmrz/obsidian-plugin-kit/dialog";
 import { showProgressNotice } from "@vrtmrz/obsidian-plugin-kit/progress";
 
@@ -8,7 +8,6 @@ import {
   parseRelayUrls,
 } from "../transport/relay-settings.js";
 import { createTrysteroTransport } from "../transport/trystero-transport.js";
-import type { RtcDiagnosticEvent } from "../transport/rtc-diagnostics.js";
 import { registerSenderCommands } from "./sender-commands.js";
 import { SenderPitchController } from "./sender-pitch-controller.js";
 import { BarrowAlleySenderPitchModal } from "./sender-pitch-modal.js";
@@ -28,10 +27,10 @@ export class BarrowAlleyPlugin extends Plugin {
     this.#settingsStore = new ObsidianRelaySettingsStore(this);
     this.#settings = await this.#settingsStore.load();
     this.#pitchController = new SenderPitchController({
-      createTransport: async (options) =>
+      createTransport: async (options, rtcDiagnostics) =>
         createTrysteroTransport({
           ...options,
-          rtcDiagnostics: (event) => this.#handleRtcDiagnostic(event),
+          rtcDiagnostics,
         }),
       createView: (model, actions) =>
         new BarrowAlleySenderPitchModal(this.app, model, actions),
@@ -105,14 +104,6 @@ export class BarrowAlleyPlugin extends Plugin {
     } catch (error) {
       preparation.cancel(readableSetupError(error));
     }
-  }
-
-  #handleRtcDiagnostic(event: RtcDiagnosticEvent): void {
-    if (event.type !== "failure") return;
-    new Notice(
-      `Barrow Alley could not establish the direct connection. ${event.diagnosis.message}`,
-      10_000,
-    );
   }
 }
 

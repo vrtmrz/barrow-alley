@@ -15,6 +15,32 @@
   color: var(--text-error);
 }
 
+.barrow-alley-pitch__diagnostic {
+  margin-block: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+}
+
+.barrow-alley-pitch__diagnostic p {
+  margin-block: 0.35rem 0;
+}
+
+.barrow-alley-pitch__diagnostic[data-error] {
+  border-color: var(--background-modifier-error);
+}
+
+.barrow-alley-pitch__diagnostic[data-error] > p:first-of-type {
+  color: var(--text-error);
+}
+
+.barrow-alley-pitch__diagnostic-totals {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+}
+
 .barrow-alley-pitch__approval {
   margin-block: 1rem;
   padding: 1rem;

@@ -131,6 +131,11 @@ describe("RTC diagnostics", () => {
     expect(JSON.stringify(events)).not.toMatch(
       /192\.0\.2\.10|pair-secret|local-secret|remote-secret/iu,
     );
+    expect(events.find((event) => event.type === "status")).toEqual(
+      expect.objectContaining({
+        totals: { attempted: 1, connected: 0, failed: 0, closed: 0 },
+      }),
+    );
   });
 
   it("isolates observer failures from RTCPeerConnection events", () => {

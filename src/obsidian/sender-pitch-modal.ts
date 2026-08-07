@@ -2,6 +2,8 @@ import { Modal, type App } from "obsidian";
 import { ProgressFragment } from "@vrtmrz/obsidian-plugin-kit/progress";
 
 import type { SenderState, TransferProgress } from "../core/index.js";
+import type { RtcDiagnosticEvent } from "../transport/rtc-diagnostics.js";
+import { presentRtcDiagnostic } from "./rtc-diagnostic-presentation.js";
 import type {
   SenderPitchView,
   SenderPitchViewActions,
@@ -13,6 +15,9 @@ export class BarrowAlleySenderPitchModal extends Modal implements SenderPitchVie
   readonly #model: SenderPitchViewModel;
   readonly #actions: SenderPitchViewActions;
   #statusElement: HTMLParagraphElement | undefined;
+  #diagnosticElement: HTMLDivElement | undefined;
+  #diagnosticMessageElement: HTMLParagraphElement | undefined;
+  #diagnosticTotalsElement: HTMLParagraphElement | undefined;
   #approvalElement: HTMLDivElement | undefined;
   #acceptButton: HTMLButtonElement | undefined;
   #denyButton: HTMLButtonElement | undefined;
@@ -61,6 +66,21 @@ export class BarrowAlleySenderPitchModal extends Modal implements SenderPitchVie
     this.#statusElement.className = "barrow-alley-pitch__status";
     this.#statusElement.textContent = "Preparing the pitch…";
     root.append(this.#statusElement);
+
+    this.#diagnosticElement = document.createElement("div");
+    this.#diagnosticElement.className = "barrow-alley-pitch__diagnostic";
+    this.#diagnosticElement.hidden = true;
+    this.#diagnosticElement.setAttribute("role", "status");
+    this.#diagnosticElement.setAttribute("aria-live", "polite");
+    const diagnosticHeading = document.createElement("strong");
+    diagnosticHeading.textContent = "Direct connection";
+    this.#diagnosticElement.append(diagnosticHeading);
+    this.#diagnosticMessageElement = document.createElement("p");
+    this.#diagnosticElement.append(this.#diagnosticMessageElement);
+    this.#diagnosticTotalsElement = document.createElement("p");
+    this.#diagnosticTotalsElement.className = "barrow-alley-pitch__diagnostic-totals";
+    this.#diagnosticElement.append(this.#diagnosticTotalsElement);
+    root.append(this.#diagnosticElement);
 
     this.#approvalElement = this.#createApproval(document);
     this.#approvalElement.hidden = true;
@@ -118,6 +138,19 @@ export class BarrowAlleySenderPitchModal extends Modal implements SenderPitchVie
       value: progress.transferredBytes,
       total: progress.totalBytes,
     });
+  }
+
+  setRtcDiagnostic(event: RtcDiagnosticEvent): void {
+    const diagnostic = this.#diagnosticElement;
+    const message = this.#diagnosticMessageElement;
+    const totals = this.#diagnosticTotalsElement;
+    if (diagnostic === undefined || message === undefined || totals === undefined) return;
+    const presentation = presentRtcDiagnostic(event);
+    diagnostic.hidden = false;
+    diagnostic.toggleAttribute("data-error", presentation.isFailure);
+    diagnostic.setAttribute("role", presentation.isFailure ? "alert" : "status");
+    message.textContent = presentation.message;
+    if (presentation.totals !== undefined) totals.textContent = presentation.totals;
   }
 
   #createApproval(document: Document): HTMLDivElement {

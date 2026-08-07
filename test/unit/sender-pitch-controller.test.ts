@@ -20,6 +20,10 @@ import {
   type VaultBinaryReader,
 } from "../../src/obsidian/vault-source.js";
 import { InMemoryTransportNetwork } from "../../src/transport/index.js";
+import type {
+  RtcDiagnosticEvent,
+  RtcDiagnosticObserver,
+} from "../../src/transport/rtc-diagnostics.js";
 import { InMemorySink, InMemorySource } from "../fixtures/in-memory-files.js";
 
 const NOTES_HASH = "ab5aa97074c454a0632057e704220d9a6678fbf773a0a5806fc09b8173b07309";
@@ -29,6 +33,7 @@ class RecordingView implements SenderPitchView {
   readonly actions: SenderPitchViewActions;
   readonly states: SenderState[] = [];
   readonly progress: TransferProgress[] = [];
+  readonly rtcDiagnostics: RtcDiagnosticEvent[] = [];
   opened = false;
   closed = false;
 
@@ -51,6 +56,10 @@ class RecordingView implements SenderPitchView {
 
   setProgress(progress: TransferProgress): void {
     this.progress.push(progress);
+  }
+
+  setRtcDiagnostic(event: RtcDiagnosticEvent): void {
+    this.rtcDiagnostics.push(event);
   }
 }
 
@@ -116,10 +125,12 @@ describe("SenderPitchController", () => {
     const senderTransport = network.createEndpoint("sender");
     const receiverTransport = network.createEndpoint("receiver");
     let view: RecordingView | undefined;
+    let reportRtcDiagnostic: RtcDiagnosticObserver | undefined;
     const controller = new SenderPitchController({
-      createTransport: async (options) => {
+      createTransport: async (options, onRtcDiagnostic) => {
         expect(options.relays).toEqual(["wss://relay.example"]);
         expect(options.roomId).toMatch(/^barrow-alley-/u);
+        reportRtcDiagnostic = onRtcDiagnostic;
         return senderTransport;
       },
       createView(model, actions) {
@@ -141,6 +152,21 @@ describe("SenderPitchController", () => {
     });
     expect(view?.opened).toBe(true);
     expect(view?.states.at(-1)).toBe("waiting-for-peer");
+
+    reportRtcDiagnostic?.({
+      type: "status",
+      instanceId: "rtc-1",
+      connectionState: "connecting",
+      iceConnectionState: "checking",
+      history: {
+        connection: ["connecting"],
+        iceConnection: ["checking"],
+        iceGathering: ["gathering"],
+        signaling: ["stable"],
+      },
+      totals: { attempted: 1, connected: 0, failed: 0, closed: 0 },
+    });
+    expect(view?.rtcDiagnostics).toHaveLength(1);
 
     await receiverTransport.send("sender", {
       type: "connection-request",
