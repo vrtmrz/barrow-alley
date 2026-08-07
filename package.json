@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:boundaries": "vitest run test/unit/dependency-boundaries.test.ts",
+    "test:e2e:trystero-local": "node test/e2e/trystero-local.mjs",
     "web:dev": "vite --config test/web/vite.config.ts",
     "web:check": "svelte-check --tsconfig test/web/tsconfig.json",
     "web:build": "npm run web:check && vite build --config test/web/vite.config.ts",
@@ -25,6 +26,7 @@
   "author": "vorotamoroz",
   "license": "MIT",
   "dependencies": {
+    "@trystero-p2p/nostr": "0.25.3",
     "@vrtmrz/browser-ui-kit": "0.1.0",
     "@vrtmrz/obsidian-plugin-kit": "0.1.3",
     "@vrtmrz/ui-interactions": "0.1.2"
@@ -38,7 +40,8 @@
     "svelte-check": "4.7.4",
     "typescript": "6.0.3",
     "vite": "8.2.0",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "werift": "0.24.3"
   },
   "engines": {
     "node": ">=22.12.0"

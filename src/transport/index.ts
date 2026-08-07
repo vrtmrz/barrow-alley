@@ -11,3 +11,33 @@ export type {
   MessageHandler,
   Transport,
 } from "./transport.js";
+export {
+  DEFAULT_RELAY_SETTINGS,
+  parseRelayUrls,
+  RelaySettingsError,
+  relayUrlsToText,
+} from "./relay-settings.js";
+export type {
+  RelaySettingsErrorCode,
+  RelayUrlPolicy,
+} from "./relay-settings.js";
+export {
+  ConnectionError,
+  createTrysteroTransport,
+  TrysteroTransport,
+} from "./trystero-transport.js";
+export type {
+  ConnectionErrorCode,
+  PeerAwareTransport,
+  PeerEventHandler,
+  RelaySocketFacade,
+  TrysteroActionContext,
+  TrysteroActionFacade,
+  TrysteroJoinCallbacks,
+  TrysteroJoinConfig,
+  TrysteroJoinError,
+  TrysteroRoomFacade,
+  TrysteroRuntime,
+  TrysteroTransportOptions,
+  WaitForPeerOptions,
+} from "./trystero-transport.js";

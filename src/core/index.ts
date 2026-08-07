@@ -6,6 +6,7 @@ export type {
   SourceItem,
 } from "./files.js";
 export type { ManifestItem } from "./manifest.js";
+export type { RelaySettings } from "./settings.js";
 export { ProtocolValidationError } from "./protocol/errors.js";
 export type {
   AcceptMessage,

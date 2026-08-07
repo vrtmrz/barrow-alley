@@ -8,6 +8,7 @@
   },
   "include": [
     "scripts/**/*.ts",
+    "test/e2e/**/*.ts",
     "test/fixtures/**/*.ts",
     "test/integration/**/*.ts",
     "test/unit/**/*.ts",

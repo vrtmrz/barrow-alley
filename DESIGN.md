@@ -384,6 +384,17 @@ Use Trystero for:
 - Peer-specific actions.
 - Connection and disconnection events.
 
+Barrow Alley uses one short Trystero action and awaits each action sender Promise
+as transport backpressure. Trystero treats a top-level typed array as binary but
+JSON-serialises an object containing one. The transport adapter therefore sends
+`file-chunk.data` as the top-level binary payload and puts the remaining validated
+frame fields in a versioned Trystero metadata envelope. It reconstructs the
+domain message before the normal untrusted-message validator sees it.
+
+`room.leave()` owns per-pitch cleanup: it removes the room's Nostr subscriptions
+and closes its WebRTC peers. Trystero may retain a module-level relay WebSocket
+for reuse by another room, so a pitch must not pause or close that shared socket.
+
 LiveSync already contains relevant implementation experience. Reuse concepts or narrowly extracted code where appropriate, especially around:
 
 - Trystero lifecycle.
@@ -407,7 +418,7 @@ Add a Barrow Alley settings tab with:
 - A multiline relay URL field.
 - One relay URL per line.
 - A `Restore defaults` action.
-- Explanatory text that sender and receiver must share at least one usable relay.
+- Explanatory text that sender and visitor must share at least one usable relay.
 - Validation feedback.
 
 Rules:
@@ -425,7 +436,7 @@ Suggested data model:
 
 ```ts
 export interface RelaySettings {
-  relays: string[];
+  readonly relays: readonly string[];
 }
 ```
 
@@ -439,7 +450,7 @@ Store it in `localStorage`.
 
 The browser UI must explain:
 
-> The sender and receiver need at least one relay in common.
+> The sender and visitor need at least one usable relay in common.
 
 The browser test client should use the same validation function as the plugin where possible.
 
@@ -458,6 +469,14 @@ Distinguish these states where practical:
 - Room not found before timeout.
 - Peer reached the room but WebRTC could not connect.
 - Peer disconnected after connection.
+
+These are local `ConnectionError` classifications rather than peer-visible wire
+errors. An invalid effective list prevents room creation. A relay-open timeout is
+`RELAY_UNAVAILABLE`; a peer-discovery timeout is `ROOM_NOT_FOUND`; Trystero's
+join callback maps handshake, password, ICE, and direct-connection failures to
+`WEBRTC_CONNECTION_FAILED`; and a targeted action which has lost its peer maps
+to `PEER_DISCONNECTED`. A relay mismatch and an absent pitch are intentionally
+indistinguishable at the room-discovery boundary.
 
 Do not provide a misleading `Test relays` button that implies full end-to-end compatibility. A future diagnostics screen may report connection and publish/subscribe observations, but it is not required initially.
 
@@ -619,7 +638,14 @@ The transfer layer should:
 - Calculate SHA-256 over the complete source and received byte arrays.
 - Allow cancellation between chunks.
 
-Choose an initial chunk size through testing rather than protocol law. Keep it configurable internally.
+Start with 64 KiB chunks, keep the size configurable internally, and reject an
+individual incoming chunk larger than 1 MiB. These values are implementation
+safety limits rather than protocol-version constants and may be adjusted after
+real Trystero and mobile measurements.
+
+Trystero applies its own lower-level chunking to an action payload. Barrow Alley
+keeps the 64 KiB domain frame because awaiting each action sender Promise still
+bounds queued work and avoids depending on Trystero's private chunk size.
 
 ## 7.7 Integrity
 
@@ -1168,6 +1194,7 @@ Required unit coverage:
 
 - Pitch number format and secure generation boundary.
 - Relay URL parsing, normalisation, deduplication, and rejection.
+- No valid relays preventing session creation at the adapter boundary.
 - Protocol message validation.
 - Sender state transitions.
 - Receiver state transitions.
@@ -1201,7 +1228,6 @@ Test complete flows without Trystero:
 - Receiver disconnects during transfer.
 - Corrupt chunk causes hash failure.
 - Source changes after manifest.
-- No valid relays prevents session creation at the adapter boundary.
 
 ## 15.3 Fancy Kit workflow tests
 
@@ -1217,6 +1243,12 @@ Use scripted drivers for:
 Do not use a real Obsidian app for logic that can be verified through the neutral interaction contracts.
 
 ## 15.4 Real interoperability tests
+
+An automated local test uses a strfry Compose fixture and two separate `werift`
+processes to exercise actual Nostr discovery, WebRTC establishment, approval,
+pre-accept disclosure, and session cleanup. Production parsing remains
+`wss://`-only; the adapter's explicit test policy permits `ws://` solely for a
+loopback host.
 
 Maintain a concise manual matrix:
 
