@@ -15,7 +15,11 @@ import type { TransferProgressHandler } from "../transfer/progress.js";
 import { sendFile } from "../transfer/sender.js";
 import type { Transport } from "../../transport/transport.js";
 import { SessionError } from "./errors.js";
-import { transitionSenderState, type SenderState } from "./state.js";
+import {
+  transitionSenderState,
+  type SenderState,
+  type SenderStateHandler,
+} from "./state.js";
 
 export interface SenderSessionOptions {
   /** Opaque internal session ID; this is not the user-facing Pitch number. */
@@ -28,6 +32,8 @@ export interface SenderSessionOptions {
   readonly chunkSize?: number;
   /** Optional sender-side progress observer. */
   readonly onProgress?: TransferProgressHandler;
+  /** Optional presentation observer called after every valid lifecycle transition. */
+  readonly onStateChange?: SenderStateHandler;
 }
 
 /**
@@ -43,6 +49,7 @@ export class SenderSession {
   readonly #transport: Transport;
   readonly #chunkSize: number | undefined;
   readonly #onProgress: TransferProgressHandler | undefined;
+  readonly #onStateChange: SenderStateHandler | undefined;
   readonly #knownPeers = new Set<string>();
   readonly #sourceItems = new Map<string, SourceItem>();
   readonly #unsubscribeMessage: () => void;
@@ -63,6 +70,7 @@ export class SenderSession {
     this.#transport = options.transport;
     this.#chunkSize = options.chunkSize;
     this.#onProgress = options.onProgress;
+    this.#onStateChange = options.onStateChange;
     this.#unsubscribeMessage = this.#transport.onMessage(async (peerId, payload) => {
       await this.#receiveMessage(peerId, payload);
     });
@@ -169,6 +177,11 @@ export class SenderSession {
 
   #transition(next: SenderState): void {
     this.#state = transitionSenderState(this.#state, next);
+    try {
+      this.#onStateChange?.(this.#state);
+    } catch {
+      // Presentation observers cannot alter the session lifecycle.
+    }
   }
 
   #prepareManifest(sourceItems: readonly SourceItem[]): void {

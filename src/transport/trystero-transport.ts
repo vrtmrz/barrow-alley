@@ -6,6 +6,10 @@ import {
 
 import type { MessageHandler, Transport } from "./transport.js";
 import { parseRelayUrls, RelaySettingsError } from "./relay-settings.js";
+import {
+  createDiagnosticRTCPeerConnectionConstructor,
+  type RtcDiagnosticObserver,
+} from "./rtc-diagnostics.js";
 
 const ACTION_NAME = "barrow";
 const FILE_CHUNK_ENVELOPE_VERSION = 1;
@@ -63,6 +67,8 @@ export interface TrysteroTransportOptions {
   readonly peerConnectionTimeoutMs?: number;
   /** Browser hosts omit this; server-side interoperability tests inject WebRTC. */
   readonly rtcPolyfill?: typeof RTCPeerConnection;
+  /** Enables the sanitised LiveSync-derived diagnostic wrapper for this room. */
+  readonly rtcDiagnostics?: RtcDiagnosticObserver;
   /** Test-only permission for a local, non-TLS strfry Compose fixture. */
   readonly allowInsecureLoopbackForTests?: boolean;
 }
@@ -403,6 +409,7 @@ export async function createTrysteroTransport(
   let transport: TrysteroTransport | undefined;
   let earlyJoinFailure: TrysteroJoinError | undefined;
   let room: TrysteroRoomFacade;
+  const rtcPolyfill = resolveRtcConstructor(options);
   try {
     room = runtime.joinRoom(
       {
@@ -412,7 +419,7 @@ export async function createTrysteroTransport(
           urls: [...relays],
           manualReconnection: false,
         },
-        ...(options.rtcPolyfill === undefined ? {} : { rtcPolyfill: options.rtcPolyfill }),
+        ...(rtcPolyfill === undefined ? {} : { rtcPolyfill }),
       },
       options.roomId,
       {
@@ -440,6 +447,23 @@ export async function createTrysteroTransport(
     await transport.close();
     throw error;
   }
+}
+
+function resolveRtcConstructor(
+  options: TrysteroTransportOptions,
+): typeof RTCPeerConnection | undefined {
+  if (options.rtcDiagnostics === undefined) return options.rtcPolyfill;
+  const BasePeerConnection = options.rtcPolyfill ?? globalThis.RTCPeerConnection;
+  if (typeof BasePeerConnection !== "function") {
+    throw new ConnectionError(
+      "TRANSPORT_FAILED",
+      "RTCPeerConnection is unavailable for direct-connection diagnostics.",
+    );
+  }
+  return createDiagnosticRTCPeerConnectionConstructor(
+    BasePeerConnection,
+    options.rtcDiagnostics,
+  );
 }
 
 const defaultTrysteroRuntime: TrysteroRuntime = {

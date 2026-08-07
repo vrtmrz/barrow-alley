@@ -5,9 +5,21 @@ import {
   createTrysteroTransport,
   type TrysteroActionFacade,
   type TrysteroJoinCallbacks,
+  type TrysteroJoinConfig,
   type TrysteroRoomFacade,
   type TrysteroRuntime,
 } from "../../src/transport/trystero-transport.js";
+
+class FakePeerConnection extends EventTarget {
+  connectionState: RTCPeerConnectionState = "new";
+  iceConnectionState: RTCIceConnectionState = "new";
+  iceGatheringState: RTCIceGatheringState = "new";
+  signalingState: RTCSignalingState = "stable";
+
+  async getStats(): Promise<RTCStatsReport> {
+    return new Map() as unknown as RTCStatsReport;
+  }
+}
 
 class FakeAction implements TrysteroActionFacade {
   onMessage: TrysteroActionFacade["onMessage"] = null;
@@ -65,13 +77,13 @@ function createRuntime(socketState = 1): {
   readonly runtime: TrysteroRuntime;
   readonly room: FakeRoom;
   readonly joinCalls: Array<{
-    readonly config: unknown;
+    readonly config: TrysteroJoinConfig;
     readonly roomId: string;
   }>;
   getCallbacks(): TrysteroJoinCallbacks;
 } {
   const room = new FakeRoom();
-  const joinCalls: Array<{ readonly config: unknown; readonly roomId: string }> = [];
+  const joinCalls: Array<{ readonly config: TrysteroJoinConfig; readonly roomId: string }> = [];
   let callbacks: TrysteroJoinCallbacks | undefined;
   return {
     runtime: {
@@ -100,6 +112,25 @@ const baseOptions = {
 } as const;
 
 describe("Trystero transport", () => {
+  it("wraps an explicit WebRTC constructor when diagnostics are requested", async () => {
+    const { runtime, joinCalls } = createRuntime();
+    const observer = vi.fn();
+
+    await createTrysteroTransport(
+      {
+        ...baseOptions,
+        rtcPolyfill: FakePeerConnection as unknown as typeof RTCPeerConnection,
+        rtcDiagnostics: observer,
+      },
+      runtime,
+    );
+
+    const supplied = joinCalls[0]?.config.rtcPolyfill;
+    expect(supplied).toBeTypeOf("function");
+    expect(supplied).not.toBe(FakePeerConnection);
+    expect(new (supplied ?? RTCPeerConnection)()).toBeInstanceOf(FakePeerConnection);
+  });
+
   it("targets one peer and preserves binary file-frame data through metadata", async () => {
     const { runtime, room } = createRuntime();
     const transport = await createTrysteroTransport(baseOptions, runtime);

@@ -480,6 +480,20 @@ indistinguishable at the room-discovery boundary.
 
 Do not provide a misleading `Test relays` button that implies full end-to-end compatibility. A future diagnostics screen may report connection and publish/subscribe observations, but it is not required initially.
 
+### WebRTC diagnostics
+
+Wrap each Barrow Alley Trystero room's `RTCPeerConnection` constructor with the
+diagnostic approach proven in Self-hosted LiveSync. Keep the wrapper scoped to
+that room rather than replacing the global constructor. It may observe
+connection, ICE connection, ICE gathering, and signalling state histories, and
+selected candidate-pair counters from `getStats()`.
+
+Diagnostic events are local presentation information, not protocol messages.
+They must not expose SDP, candidate addresses, candidate IDs, raw `getStats()`
+reports, Vault information, or file metadata. Observer failures must not alter
+the WebRTC lifecycle. A diagnostic can explain a failed direct connection, but
+must not claim that relay availability alone proves end-to-end connectivity.
+
 ## 6.4 STUN and TURN
 
 The initial release does not operate or bundle a TURN relay.

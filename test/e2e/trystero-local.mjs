@@ -75,6 +75,10 @@ try {
   ]);
   assert.equal(senderClosed.state, "closed");
   assert.equal(receiverClosed.state, "closed");
+  assert.equal(senderClosed.rtcConnectedEvents > 0, true);
+  assert.equal(receiverClosed.rtcConnectedEvents > 0, true);
+  assert.equal(senderClosed.rtcFailureEvents, 0);
+  assert.equal(receiverClosed.rtcFailureEvents, 0);
   await Promise.all([sender.waitForExit(), receiver.waitForExit()]);
   console.log("Two local Trystero clients reached sender approval without pre-accept metadata.");
 } finally {

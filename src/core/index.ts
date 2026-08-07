@@ -6,6 +6,15 @@ export type {
   SourceItem,
 } from "./files.js";
 export type { ManifestItem } from "./manifest.js";
+export {
+  derivePitchCredentials,
+  formatPitchNumber,
+  generatePitchNumber,
+  PitchNumberError,
+  validatePitchNumber,
+  type PitchCredentials,
+  type RandomByteFiller,
+} from "./pitch-number.js";
 export type { RelaySettings } from "./settings.js";
 export { ProtocolValidationError } from "./protocol/errors.js";
 export type {
@@ -36,6 +45,7 @@ export {
   transitionReceiverState,
   transitionSenderState,
   type ReceiverState,
+  type SenderStateHandler,
   type SenderState,
 } from "./session/state.js";
 export { TransferError, type TransferErrorCode } from "./transfer/errors.js";

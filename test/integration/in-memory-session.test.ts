@@ -32,6 +32,38 @@ function createFiles(): InMemorySource {
 }
 
 describe("in-memory sessions", () => {
+  it("reports sender lifecycle changes to a presentation observer", async () => {
+    const network = new InMemoryTransportNetwork();
+    const states: string[] = [];
+    const sender = new SenderSession({
+      sessionId: "session-1",
+      source: createFiles(),
+      transport: network.createEndpoint("sender"),
+      onStateChange(state) {
+        states.push(state);
+      },
+    });
+    const receiver = new ReceiverSession({
+      clientKind: "browser",
+      sink: new InMemorySink(),
+      transport: network.createEndpoint("receiver"),
+    });
+
+    await sender.start();
+    await receiver.connect("sender");
+    await sender.deny();
+    await sender.close();
+
+    expect(states).toEqual([
+      "preparing",
+      "waiting-for-peer",
+      "approval-pending",
+      "waiting-for-peer",
+      "closing",
+      "closed",
+    ]);
+  });
+
   it("discloses the manifest only after acceptance and retrieves one selected file", async () => {
     const network = new InMemoryTransportNetwork();
     const senderTransport = network.createEndpoint("sender");

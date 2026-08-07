@@ -17,6 +17,18 @@ export {
   RelaySettingsError,
   relayUrlsToText,
 } from "./relay-settings.js";
+export {
+  createDiagnosticRTCPeerConnectionConstructor,
+  diagnoseRtcFailure,
+} from "./rtc-diagnostics.js";
+export type {
+  RtcDiagnosticEvent,
+  RtcDiagnosticMetrics,
+  RtcDiagnosticObserver,
+  RtcFailureDiagnosis,
+  RtcFailureReason,
+  RtcStateHistory,
+} from "./rtc-diagnostics.js";
 export type {
   RelaySettingsErrorCode,
   RelayUrlPolicy,

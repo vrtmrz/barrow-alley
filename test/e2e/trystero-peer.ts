@@ -3,7 +3,10 @@ import process from "node:process";
 import { RTCPeerConnection } from "werift";
 
 import { ReceiverSession, SenderSession } from "../../src/core/index.js";
-import { createTrysteroTransport } from "../../src/transport/index.js";
+import {
+  createTrysteroTransport,
+  type RtcDiagnosticEvent,
+} from "../../src/transport/index.js";
 import { InMemorySink, InMemorySource } from "../fixtures/in-memory-files.js";
 
 const role = process.env.BARROW_ALLEY_TEST_ROLE;
@@ -11,6 +14,8 @@ const relay = process.env.BARROW_ALLEY_TEST_RELAY;
 if (role !== "sender" && role !== "receiver") throw new Error("Unknown test peer role.");
 if (relay === undefined) throw new Error("Missing local relay URL.");
 if (process.send === undefined) throw new Error("The test peer requires an IPC parent.");
+
+const rtcDiagnostics: RtcDiagnosticEvent[] = [];
 
 const transport = await createTrysteroTransport({
   roomId: "barrow-alley-local-interoperability",
@@ -20,6 +25,7 @@ const transport = await createTrysteroTransport({
   relayConnectionTimeoutMs: 10_000,
   peerConnectionTimeoutMs: 30_000,
   rtcPolyfill: RTCPeerConnection as unknown as typeof globalThis.RTCPeerConnection,
+  rtcDiagnostics: (event) => rtcDiagnostics.push(event),
 });
 
 if (role === "sender") await runSender();
@@ -53,6 +59,8 @@ async function runSender(): Promise<void> {
     type: "closed",
     role,
     state: session.state,
+    rtcConnectedEvents: countConnectedRtcEvents(),
+    rtcFailureEvents: rtcDiagnostics.filter((event) => event.type === "failure").length,
     activeResources: process.getActiveResourcesInfo(),
   });
 }
@@ -87,8 +95,16 @@ async function runReceiver(): Promise<void> {
     type: "closed",
     role,
     state: session.state,
+    rtcConnectedEvents: countConnectedRtcEvents(),
+    rtcFailureEvents: rtcDiagnostics.filter((event) => event.type === "failure").length,
     activeResources: process.getActiveResourcesInfo(),
   });
+}
+
+function countConnectedRtcEvents(): number {
+  return rtcDiagnostics.filter(
+    (event) => event.type === "status" && event.connectionState === "connected",
+  ).length;
 }
 
 function sendToParent(message: unknown): void {
