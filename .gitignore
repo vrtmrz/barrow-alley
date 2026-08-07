@@ -1,0 +1,12 @@
+node_modules/
+main.js
+main.js.map
+dist-web/
+coverage/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.serena/
+memo.local/
