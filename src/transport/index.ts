@@ -4,8 +4,10 @@ export {
   TransportError,
 } from "./in-memory-transport.js";
 export type {
-  IncomingTransfer,
+  InMemoryMessageContext,
+  InMemoryTransportNetworkOptions,
+} from "./in-memory-transport.js";
+export type {
   MessageHandler,
-  TransferHandler,
   Transport,
 } from "./transport.js";

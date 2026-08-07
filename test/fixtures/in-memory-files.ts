@@ -17,7 +17,7 @@ export interface InMemorySourceFile {
 
 interface StoredSourceFile {
   readonly metadata: SourceItem;
-  readonly chunks: readonly Uint8Array[];
+  bytes: Uint8Array;
 }
 
 export class InMemorySource implements Source {
@@ -30,7 +30,7 @@ export class InMemorySource implements Source {
       const base = { id: file.id, displayName: file.displayName, size, hash: file.hash };
       this.#files.set(file.id, {
         metadata: file.mimeType === undefined ? base : { ...base, mimeType: file.mimeType },
-        chunks: file.chunks.map((chunk) => chunk.slice()),
+        bytes: concatenate(file.chunks),
       });
     }
   }
@@ -39,10 +39,17 @@ export class InMemorySource implements Source {
     return [...this.#files.values()].map((file) => file.metadata);
   }
 
-  async open(itemId: string): Promise<AsyncIterable<Uint8Array>> {
+  async open(itemId: string): Promise<Uint8Array> {
     const file = this.#files.get(itemId);
     if (file === undefined) throw new Error(`Unknown in-memory source ID: ${itemId}.`);
-    return emitChunks(file.chunks);
+    return file.bytes.slice();
+  }
+
+  /** Replaces current bytes without changing manifest metadata, modelling source mutation. */
+  replaceBytes(itemId: string, bytes: Uint8Array): void {
+    const file = this.#files.get(itemId);
+    if (file === undefined) throw new Error(`Unknown in-memory source ID: ${itemId}.`);
+    file.bytes = bytes.slice();
   }
 }
 
@@ -76,10 +83,6 @@ export class InMemorySink implements Sink {
       },
     };
   }
-}
-
-async function* emitChunks(chunks: readonly Uint8Array[]): AsyncIterable<Uint8Array> {
-  for (const chunk of chunks) yield chunk.slice();
 }
 
 function concatenate(chunks: readonly Uint8Array[]): Uint8Array {

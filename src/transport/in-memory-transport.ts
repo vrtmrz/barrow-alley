@@ -1,9 +1,4 @@
-import type {
-  IncomingTransfer,
-  MessageHandler,
-  TransferHandler,
-  Transport,
-} from "./transport.js";
+import type { MessageHandler, Transport } from "./transport.js";
 
 export class TransportError extends Error {
   constructor(message: string) {
@@ -12,14 +7,31 @@ export class TransportError extends Error {
   }
 }
 
+export interface InMemoryMessageContext {
+  readonly senderPeerId: string;
+  readonly recipientPeerId: string;
+  readonly payload: unknown;
+}
+
+export interface InMemoryTransportNetworkOptions {
+  /** Deterministic fault-injection boundary used by protocol integration tests. */
+  readonly transformMessage?: (context: InMemoryMessageContext) => unknown;
+}
+
 /**
  * Owns isolated endpoints for deterministic session integration tests.
  *
- * It models peer identity, routing, and closure only. It intentionally does not
- * simulate Trystero, network timing, wire framing, or DataChannel buffering.
+ * It models peer identity, framed-message routing, and closure only. It
+ * intentionally does not simulate Trystero, network timing, or DataChannel
+ * buffering.
  */
 export class InMemoryTransportNetwork {
   readonly #endpoints = new Map<string, InMemoryTransport>();
+  readonly #transformMessage: ((context: InMemoryMessageContext) => unknown) | undefined;
+
+  constructor(options: InMemoryTransportNetworkOptions = {}) {
+    this.#transformMessage = options.transformMessage;
+  }
 
   createEndpoint(peerId: string): InMemoryTransport {
     if (peerId.length === 0) throw new TransportError("peerId must not be empty.");
@@ -38,13 +50,26 @@ export class InMemoryTransportNetwork {
   disconnect(peerId: string): void {
     this.#endpoints.delete(peerId);
   }
+
+  async routeMessage(
+    senderPeerId: string,
+    recipientPeerId: string,
+    payload: unknown,
+  ): Promise<void> {
+    const recipient = this.endpoint(recipientPeerId);
+    if (recipient === undefined) {
+      throw new TransportError(`Peer is unavailable: ${recipientPeerId}.`);
+    }
+    const transformed =
+      this.#transformMessage?.({ senderPeerId, recipientPeerId, payload }) ?? payload;
+    await recipient.deliverMessage(senderPeerId, clonePayload(transformed));
+  }
 }
 
 export class InMemoryTransport implements Transport {
   readonly peerId: string;
   readonly #network: InMemoryTransportNetwork;
   readonly #messageHandlers = new Set<MessageHandler>();
-  #transferHandler: TransferHandler | undefined;
   #closed = false;
 
   constructor(network: InMemoryTransportNetwork, peerId: string) {
@@ -54,20 +79,7 @@ export class InMemoryTransport implements Transport {
 
   async send(peerId: string, payload: unknown): Promise<void> {
     this.#assertOpen();
-    const recipient = this.#network.endpoint(peerId);
-    if (recipient === undefined) throw new TransportError(`Peer is unavailable: ${peerId}.`);
-    await recipient.deliverMessage(this.peerId, payload);
-  }
-
-  async sendTransfer(peerId: string, transfer: IncomingTransfer): Promise<void> {
-    this.#assertOpen();
-    const recipient = this.#network.endpoint(peerId);
-    if (recipient === undefined) throw new TransportError(`Peer is unavailable: ${peerId}.`);
-    await recipient.deliverTransfer(this.peerId, {
-      sessionId: transfer.sessionId,
-      fileId: transfer.fileId,
-      chunks: cloneChunks(transfer.chunks),
-    });
+    await this.#network.routeMessage(this.peerId, peerId, payload);
   }
 
   onMessage(handler: MessageHandler): () => void {
@@ -76,25 +88,11 @@ export class InMemoryTransport implements Transport {
     return () => this.#messageHandlers.delete(handler);
   }
 
-  onTransfer(handler: TransferHandler): () => void {
-    this.#assertOpen();
-    // One consumer mirrors the session invariant of one active destination writer
-    // and avoids sharing a single asynchronous iterator between observers.
-    if (this.#transferHandler !== undefined) {
-      throw new TransportError(`Peer already has a transfer handler: ${this.peerId}.`);
-    }
-    this.#transferHandler = handler;
-    return () => {
-      if (this.#transferHandler === handler) this.#transferHandler = undefined;
-    };
-  }
-
   async close(): Promise<void> {
     if (this.#closed) return;
     this.#closed = true;
     this.#network.disconnect(this.peerId);
     this.#messageHandlers.clear();
-    this.#transferHandler = undefined;
   }
 
   async deliverMessage(peerId: string, payload: unknown): Promise<void> {
@@ -102,21 +100,17 @@ export class InMemoryTransport implements Transport {
     await Promise.all([...this.#messageHandlers].map(async (handler) => handler(peerId, payload)));
   }
 
-  async deliverTransfer(peerId: string, transfer: IncomingTransfer): Promise<void> {
-    this.#assertOpen();
-    if (this.#transferHandler === undefined) {
-      throw new TransportError(`Peer has no transfer handler: ${this.peerId}.`);
-    }
-    await this.#transferHandler(peerId, transfer);
-  }
-
   #assertOpen(): void {
     if (this.#closed) throw new TransportError(`Transport is closed: ${this.peerId}.`);
   }
 }
 
-async function* cloneChunks(chunks: AsyncIterable<Uint8Array>): AsyncIterable<Uint8Array> {
-  // Copying prevents sender and receiver tests from accidentally sharing mutable
-  // Uint8Array storage, while preserving streaming rather than buffering the file.
-  for await (const chunk of chunks) yield chunk.slice();
+function clonePayload(payload: unknown): unknown {
+  try {
+    return structuredClone(payload);
+  } catch (error) {
+    throw new TransportError(
+      `Payload cannot cross the in-memory transport boundary: ${String(error)}.`,
+    );
+  }
 }

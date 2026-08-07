@@ -364,8 +364,8 @@ The transfer layer must detect this by at least one of:
 The simplest safe initial policy is:
 
 1. Compute metadata and hash while preparing the manifest.
-2. At transfer time, verify that size and available host metadata still match.
-3. Hash the bytes sent.
+2. At transfer time, read a fresh whole-file snapshot and calculate its hash.
+3. Verify that the snapshot size and hash still match the manifest.
 4. Abort if the transfer-time hash differs from the manifest hash.
 5. Tell the user to set up a new pitch.
 
@@ -604,15 +604,19 @@ Sequential transfer simplifies:
 
 ## 7.6 Chunking and backpressure
 
-Do not rely on a convenience API that converts the whole file to one `ArrayBuffer` or keeps all chunks in memory.
+The initial implementation deliberately reads one complete file because the
+cross-platform Obsidian binary APIs do not provide a portable partial-read
+contract. Use Web Crypto to hash that complete byte array. Apply an explicit
+100 MiB per-file limit while this buffering model is in use.
 
 The transfer layer should:
 
-- Read the source incrementally where host APIs permit.
-- Send bounded chunks.
+- Keep at most one source file active per session.
+- Split the complete source snapshot into bounded chunks for transport.
 - Observe DataChannel buffering or use an explicit acknowledgement/window mechanism.
 - Avoid unbounded producer queues.
-- Calculate a transfer hash over the actual bytes.
+- Await transport capacity before offering the next chunk.
+- Calculate SHA-256 over the complete source and received byte arrays.
 - Allow cancellation between chunks.
 
 Choose an initial chunk size through testing rather than protocol law. Keep it configurable internally.
@@ -819,9 +823,7 @@ export interface SourceItem {
 
 export interface Source {
   list(): Promise<readonly SourceItem[]>;
-  computeHash(itemId: string): Promise<string>;
-  open(itemId: string): Promise<ReadableStream<Uint8Array>>;
-  verifyUnchanged(itemId: string, sourceVersion?: string): Promise<boolean>;
+  open(itemId: string): Promise<Uint8Array>;
 }
 
 export interface IncomingFileMeta {
@@ -1083,7 +1085,7 @@ export type ErrorCode =
   | "SESSION_CLOSED";
 ```
 
-Milestone 1 uses the following control-plane subset. These codes describe what
+Milestones 1 and 2 use the following peer-visible subset. These codes describe what
 may safely be reported across the peer boundary; they do not expose arbitrary
 exception text.
 
@@ -1094,6 +1096,12 @@ exception text.
 | `BUSY` | The accepted peer requests another file while one transfer is active. | A competing admission request is answered with `deny.reason = "busy"` because that peer has not been accepted. |
 | `UNKNOWN_FILE` | The accepted peer requests an ID which is absent from its disclosed manifest. | The receiver rejects an undisclosed ID locally before sending a request. The sender uses this code only after peer and session authorisation checks pass. |
 | `SESSION_CLOSED` | The requested session is unavailable to the requesting peer. | This also covers an unauthorised peer, a wrong session ID, and a sender state which cannot serve files. The shared response avoids confirming whether a guessed file ID exists. |
+| `SOURCE_CHANGED` | A fresh source snapshot differs in size or SHA-256 from the accepted manifest. | No file frame is sent until this preflight check succeeds. The pitch must be set up again. |
+| `TRANSFER_CANCELLED` | The active file transfer was intentionally stopped. | Per-file cancellation preserves the accepted session and manifest; session cancellation closes them. |
+| `TRANSFER_FAILED` | Chunk order, byte ranges, framing, or another transfer invariant fails without a more specific code. | Arbitrary local exception text is not sent to the peer. |
+| `SIZE_MISMATCH` | Manifest, sender, or receiver byte counts disagree. | The partial destination is aborted and is never completed. |
+| `HASH_MISMATCH` | Manifest, sender, or receiver SHA-256 values disagree. | The partial destination is aborted and is never completed. |
+| `DESTINATION_FAILED` | The receiver cannot create, write, complete, or clean up its destination. | The sender receives only the stable code, not host paths or exception text. |
 
 `ProtocolValidationErrorCode` is a local parser classification. The session
 layer decides whether to map it to an `ErrorMessage`, an admission

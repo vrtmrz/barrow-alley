@@ -15,7 +15,7 @@ export interface SourceItem {
   readonly size: number;
   /** Optional media type known by the source host. */
   readonly mimeType?: string;
-  /** Declared SHA-256 hex; calculation and revalidation are Milestone 2 work. */
+  /** Declared SHA-256 hex revalidated against the transfer-time snapshot. */
   readonly hash: string;
   /** Optional host revision used later to detect source mutation. */
   readonly sourceVersion?: string;
@@ -23,8 +23,9 @@ export interface SourceItem {
 
 /**
  * Supplies file bytes without exposing Vault, browser File, or other host types.
- * The asynchronous byte stream deliberately avoids a whole-file buffer contract;
- * bounded reads and source-change checks are added around it in Milestone 2.
+ * The initial Obsidian APIs expose complete binary files rather than partial
+ * reads, so Milestone 2 deliberately uses one whole-file byte array here. The
+ * transfer layer still splits that array into bounded wire chunks.
  */
 export interface Source {
   /**
@@ -35,15 +36,17 @@ export interface Source {
   list(): Promise<readonly SourceItem[]>;
 
   /**
-   * Opens a fresh asynchronous byte stream for one host-local source ID.
+   * Reads a fresh immutable snapshot for one host-local source ID.
    *
-   * Implementations must not require callers to buffer the complete file.
+   * The returned array may contain the complete file. Implementations must not
+   * mutate it after resolution because transfer-time size and hash checks are
+   * performed against that snapshot.
    *
    * @param itemId - An `id` previously returned by `list()`.
-   * @returns Bytes in source order. Implementations must not mutate a chunk after yielding it.
+   * @returns Complete file bytes in source order.
    * @throws When the item no longer exists or cannot be opened.
    */
-  open(itemId: string): Promise<AsyncIterable<Uint8Array>>;
+  open(itemId: string): Promise<Uint8Array>;
 }
 
 /** Receiver-facing metadata passed to a destination adapter. */
@@ -52,8 +55,8 @@ export type IncomingFileMeta = ManifestItem;
 /**
  * Owns one in-progress destination write.
  *
- * Session shutdown may abort an active writer now. Integrity-gated completion
- * and cleanup after corrupt or incomplete transfers belong to Milestone 2.
+ * Session shutdown or an integrity failure aborts the active writer. Completion
+ * is called only after range, size, and SHA-256 verification succeeds.
  */
 export interface IncomingFileWriter {
   /**
@@ -64,8 +67,7 @@ export interface IncomingFileWriter {
   write(chunk: Uint8Array): Promise<void>;
 
   /**
-   * Finalises the destination after the caller has accepted the logical stream.
-   * Milestone 2 makes that call conditional on byte-count and digest verification.
+   * Finalises the destination after byte-count and digest verification succeeds.
    */
   complete(): Promise<void>;
 

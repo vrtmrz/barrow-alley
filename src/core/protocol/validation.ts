@@ -7,6 +7,10 @@ import type {
   ProtocolMessage,
 } from "./messages.js";
 import { BARROW_ALLEY_PROTOCOL_VERSION } from "./version.js";
+import {
+  MAX_BUFFERED_FILE_SIZE_BYTES,
+  MAX_TRANSFER_CHUNK_SIZE_BYTES,
+} from "../transfer/limits.js";
 
 type UnknownRecord = Readonly<Record<string, unknown>>;
 
@@ -18,9 +22,15 @@ const ERROR_CODES = new Set<ErrorCode>([
   "BUSY",
   "UNKNOWN_FILE",
   "SESSION_CLOSED",
+  "SOURCE_CHANGED",
+  "TRANSFER_CANCELLED",
+  "TRANSFER_FAILED",
+  "SIZE_MISMATCH",
+  "HASH_MISMATCH",
+  "DESTINATION_FAILED",
 ]);
-// Milestone 1 validates the declared representation only. Matching this digest
-// to the transferred bytes is an integrity responsibility of Milestone 2.
+// The parser validates representation; the transfer layer compares the digest
+// with the complete source and received byte arrays.
 const SHA_256_HEX = /^[0-9a-f]{64}$/u;
 
 function invalid(message: string): never {
@@ -45,6 +55,35 @@ function asOptionalNonEmptyString(value: unknown, label: string): string | undef
   return value === undefined ? undefined : asNonEmptyString(value, label);
 }
 
+function asNonNegativeSafeInteger(value: unknown, label: string): number {
+  if (!Number.isSafeInteger(value) || (value as number) < 0) {
+    return invalid(`${label} must be a non-negative safe integer.`);
+  }
+  return value as number;
+}
+
+function asFileSize(value: unknown, label: string): number {
+  const size = asNonNegativeSafeInteger(value, label);
+  if (size > MAX_BUFFERED_FILE_SIZE_BYTES) {
+    return invalid(`${label} exceeds the buffered file-size limit.`);
+  }
+  return size;
+}
+
+function asPositiveChunkSize(value: unknown): number {
+  const size = asNonNegativeSafeInteger(value, "chunkSize");
+  if (size === 0 || size > MAX_TRANSFER_CHUNK_SIZE_BYTES) {
+    return invalid("chunkSize is outside the supported range.");
+  }
+  return size;
+}
+
+function asSha256(value: unknown, label: string): string {
+  const hash = asNonEmptyString(value, label).toLowerCase();
+  if (!SHA_256_HEX.test(hash)) return invalid(`${label} must be a SHA-256 hexadecimal string.`);
+  return hash;
+}
+
 function asClientKind(value: unknown): ClientKind {
   if (typeof value !== "string" || !CLIENT_KINDS.has(value as ClientKind)) {
     return invalid("clientKind is invalid.");
@@ -56,15 +95,10 @@ function asManifestItem(value: unknown, index: number): ManifestItem {
   const item = asRecord(value, `items[${index}]`);
   const id = asNonEmptyString(item.id, `items[${index}].id`);
   const displayName = asNonEmptyString(item.displayName, `items[${index}].displayName`);
-  if (!Number.isSafeInteger(item.size) || (item.size as number) < 0) {
-    return invalid(`items[${index}].size must be a non-negative safe integer.`);
-  }
-  const hash = asNonEmptyString(item.hash, `items[${index}].hash`).toLowerCase();
-  if (!SHA_256_HEX.test(hash)) {
-    return invalid(`items[${index}].hash must be a SHA-256 hexadecimal string.`);
-  }
+  const size = asFileSize(item.size, `items[${index}].size`);
+  const hash = asSha256(item.hash, `items[${index}].hash`);
   const mimeType = asOptionalNonEmptyString(item.mimeType, `items[${index}].mimeType`);
-  const base = { id, displayName, size: item.size as number, hash };
+  const base = { id, displayName, size, hash };
   return mimeType === undefined ? base : { ...base, mimeType };
 }
 
@@ -131,6 +165,50 @@ export function parseProtocolMessage(value: unknown): ProtocolMessage {
         items: asManifestItems(message.items),
       };
     case "request-file":
+      return {
+        type,
+        protocolVersion,
+        sessionId: asNonEmptyString(message.sessionId, "sessionId"),
+        fileId: asNonEmptyString(message.fileId, "fileId"),
+      };
+    case "file-begin":
+      return {
+        type,
+        protocolVersion,
+        sessionId: asNonEmptyString(message.sessionId, "sessionId"),
+        fileId: asNonEmptyString(message.fileId, "fileId"),
+        displayName: asNonEmptyString(message.displayName, "displayName"),
+        size: asFileSize(message.size, "size"),
+        hash: asSha256(message.hash, "hash"),
+        chunkSize: asPositiveChunkSize(message.chunkSize),
+      };
+    case "file-chunk": {
+      if (!(message.data instanceof Uint8Array) || message.data.byteLength === 0) {
+        return invalid("data must be a non-empty Uint8Array.");
+      }
+      if (message.data.byteLength > MAX_TRANSFER_CHUNK_SIZE_BYTES) {
+        return invalid("data exceeds the maximum chunk size.");
+      }
+      return {
+        type,
+        protocolVersion,
+        sessionId: asNonEmptyString(message.sessionId, "sessionId"),
+        fileId: asNonEmptyString(message.fileId, "fileId"),
+        index: asNonNegativeSafeInteger(message.index, "index"),
+        offset: asNonNegativeSafeInteger(message.offset, "offset"),
+        data: message.data.slice(),
+      };
+    }
+    case "file-end":
+      return {
+        type,
+        protocolVersion,
+        sessionId: asNonEmptyString(message.sessionId, "sessionId"),
+        fileId: asNonEmptyString(message.fileId, "fileId"),
+        bytesSent: asFileSize(message.bytesSent, "bytesSent"),
+        hash: asSha256(message.hash, "hash"),
+      };
+    case "cancel-file":
       return {
         type,
         protocolVersion,

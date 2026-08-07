@@ -1,10 +1,20 @@
-import type { IncomingFileWriter, Sink } from "../files.js";
+import type { Sink } from "../files.js";
 import type { ManifestItem } from "../manifest.js";
 import { ProtocolValidationError } from "../protocol/errors.js";
-import type { ClientKind, ErrorCode, ProtocolMessage } from "../protocol/messages.js";
+import type {
+  ClientKind,
+  ErrorCode,
+  FileBeginMessage,
+  FileChunkMessage,
+  FileEndMessage,
+  ProtocolMessage,
+} from "../protocol/messages.js";
 import { parseProtocolMessage } from "../protocol/validation.js";
 import { BARROW_ALLEY_PROTOCOL_VERSION } from "../protocol/version.js";
-import type { IncomingTransfer, Transport } from "../../transport/transport.js";
+import { TransferError } from "../transfer/errors.js";
+import type { TransferProgressHandler } from "../transfer/progress.js";
+import { IncomingFileTransfer } from "../transfer/receiver.js";
+import type { Transport } from "../../transport/transport.js";
 import { SessionError } from "./errors.js";
 import { transitionReceiverState, type ReceiverState } from "./state.js";
 
@@ -15,6 +25,8 @@ export interface ReceiverSessionOptions {
   readonly sink: Sink;
   /** Point-to-point capability owned exclusively by this receiver session. */
   readonly transport: Transport;
+  /** Optional receiver-side progress observer. */
+  readonly onProgress?: TransferProgressHandler;
 }
 
 /**
@@ -28,14 +40,15 @@ export class ReceiverSession {
   readonly #clientKind: ClientKind;
   readonly #sink: Sink;
   readonly #transport: Transport;
+  readonly #onProgress: TransferProgressHandler | undefined;
   readonly #unsubscribeMessage: () => void;
-  readonly #unsubscribeTransfer: () => void;
   #state: ReceiverState = "idle";
   #senderPeerId: string | undefined;
   #sessionId: string | undefined;
   #manifest: readonly ManifestItem[] | undefined;
   #activeFileId: string | undefined;
-  #activeWriter: IncomingFileWriter | undefined;
+  #activeTransfer: IncomingFileTransfer | undefined;
+  #cancelledTransfer: { readonly sessionId: string; readonly fileId: string } | undefined;
   #peerError: ErrorCode | undefined;
   #closePromise: Promise<void> | undefined;
 
@@ -43,11 +56,9 @@ export class ReceiverSession {
     this.#clientKind = options.clientKind;
     this.#sink = options.sink;
     this.#transport = options.transport;
+    this.#onProgress = options.onProgress;
     this.#unsubscribeMessage = this.#transport.onMessage(async (peerId, payload) => {
       await this.#receiveMessage(peerId, payload);
-    });
-    this.#unsubscribeTransfer = this.#transport.onTransfer(async (peerId, transfer) => {
-      await this.#receiveTransfer(peerId, transfer);
     });
   }
 
@@ -111,6 +122,7 @@ export class ReceiverSession {
       throw new SessionError("UNKNOWN_FILE", `Unknown manifest item: ${fileId}.`);
     }
     this.#peerError = undefined;
+    this.#cancelledTransfer = undefined;
     this.#activeFileId = fileId;
     this.#transition("receiving");
     try {
@@ -126,6 +138,47 @@ export class ReceiverSession {
     }
     if (this.#peerError !== undefined) {
       throw new SessionError("PEER_ERROR", `The sender rejected the request: ${this.#peerError}.`);
+    }
+  }
+
+  /** Cancels the active file while preserving the accepted session and manifest. */
+  async cancelFile(): Promise<void> {
+    if (
+      this.#state !== "receiving" ||
+      this.#sessionId === undefined ||
+      this.#senderPeerId === undefined ||
+      this.#activeFileId === undefined
+    ) {
+      throw new SessionError("INVALID_STATE", "A file can be cancelled only while receiving.");
+    }
+    const sessionId = this.#sessionId;
+    const fileId = this.#activeFileId;
+    const transfer = this.#activeTransfer;
+    this.#cancelledTransfer = { sessionId, fileId };
+    this.#activeTransfer = undefined;
+    this.#activeFileId = undefined;
+    this.#transition("browsing");
+
+    // Start peer cancellation before awaiting destination cleanup. In-memory
+    // delivery then trips the sender's AbortSignal before another frame is sent.
+    const notify = this.#transport.send(this.#senderPeerId, {
+      type: "cancel-file",
+      protocolVersion: BARROW_ALLEY_PROTOCOL_VERSION,
+      sessionId,
+      fileId,
+    });
+    const [cleanupResult, notifyResult] = await Promise.allSettled([
+      transfer?.cancel() ?? Promise.resolve(),
+      notify,
+    ]);
+    if (cleanupResult.status === "rejected") {
+      this.#peerError = "DESTINATION_FAILED";
+      this.#transition("failed");
+      throw cleanupResult.reason;
+    }
+    if (notifyResult.status === "rejected") {
+      this.#transition("failed");
+      throw notifyResult.reason;
     }
   }
 
@@ -150,6 +203,13 @@ export class ReceiverSession {
       if (this.#state === "denied" || this.#state === "failed") return;
       this.#peerError =
         error instanceof ProtocolValidationError ? error.code : "INVALID_MESSAGE";
+      try {
+        await this.#activeTransfer?.cancel(error);
+      } catch {
+        this.#peerError = "DESTINATION_FAILED";
+      }
+      this.#activeTransfer = undefined;
+      this.#activeFileId = undefined;
       this.#transition("failed");
       return;
     }
@@ -167,6 +227,31 @@ export class ReceiverSession {
         this.#manifest = message.items;
         this.#transition("browsing");
         return;
+      case "file-begin":
+        await this.#receiveFileBegin(message);
+        return;
+      case "file-chunk":
+        await this.#receiveFileChunk(message);
+        return;
+      case "file-end":
+        await this.#receiveFileEnd(message);
+        return;
+      case "cancel-file":
+        if (this.#matchesActive(message.sessionId, message.fileId)) {
+          try {
+            await this.#activeTransfer?.cancel();
+          } catch {
+            this.#peerError = "DESTINATION_FAILED";
+            this.#activeTransfer = undefined;
+            this.#activeFileId = undefined;
+            this.#transition("failed");
+            return;
+          }
+          this.#activeTransfer = undefined;
+          this.#activeFileId = undefined;
+          this.#transition("browsing");
+        }
+        return;
       case "deny":
         if (this.#state === "awaiting-approval") this.#transition("denied");
         return;
@@ -182,6 +267,15 @@ export class ReceiverSession {
       case "error":
         if (this.#state === "denied" || this.#state === "failed") return;
         this.#peerError = message.code;
+        try {
+          await this.#activeTransfer?.cancel(
+            new TransferError("TRANSFER_FAILED", `Sender reported ${message.code}.`),
+          );
+        } catch {
+          this.#peerError = "DESTINATION_FAILED";
+        }
+        this.#activeTransfer = undefined;
+        this.#activeFileId = undefined;
         this.#transition("failed");
         return;
       default:
@@ -189,32 +283,96 @@ export class ReceiverSession {
     }
   }
 
-  async #receiveTransfer(peerId: string, transfer: IncomingTransfer): Promise<void> {
-    // The logical data plane is accepted only for the selected manifest item
-    // from the accepted sender. Byte-range and digest checks arrive in Milestone 2.
-    if (
-      peerId !== this.#senderPeerId ||
-      this.#state !== "receiving" ||
-      transfer.sessionId !== this.#sessionId ||
-      transfer.fileId !== this.#activeFileId ||
-      this.#manifest === undefined
-    ) {
-      throw new SessionError("INVALID_STATE", "Unexpected incoming file transfer.");
+  async #receiveFileBegin(message: FileBeginMessage): Promise<void> {
+    if (this.#isCancelled(message.sessionId, message.fileId)) return;
+    if (!this.#matchesActive(message.sessionId, message.fileId) || this.#manifest === undefined) {
+      return;
     }
-    const meta = this.#manifest.find((item) => item.id === transfer.fileId);
-    if (meta === undefined) throw new SessionError("UNKNOWN_FILE", "Transfer item is not in manifest.");
-
-    this.#activeWriter = await this.#sink.begin(meta);
+    const meta = this.#manifest.find((item) => item.id === message.fileId);
+    if (meta === undefined) return;
     try {
-      for await (const chunk of transfer.chunks) await this.#activeWriter.write(chunk);
-      await this.#activeWriter.complete();
-      this.#activeWriter = undefined;
+      this.#activeTransfer = await IncomingFileTransfer.start({
+        begin: message,
+        expected: meta,
+        sink: this.#sink,
+        ...(this.#onProgress === undefined ? {} : { onProgress: this.#onProgress }),
+      });
+    } catch (error) {
+      await this.#failTransfer(error);
+    }
+  }
+
+  async #receiveFileChunk(message: FileChunkMessage): Promise<void> {
+    if (this.#isCancelled(message.sessionId, message.fileId)) return;
+    if (!this.#matchesActive(message.sessionId, message.fileId) || this.#activeTransfer === undefined) {
+      return;
+    }
+    try {
+      await this.#activeTransfer.write(message);
+    } catch (error) {
+      await this.#failTransfer(error);
+    }
+  }
+
+  async #receiveFileEnd(message: FileEndMessage): Promise<void> {
+    if (this.#isCancelled(message.sessionId, message.fileId)) return;
+    if (!this.#matchesActive(message.sessionId, message.fileId) || this.#activeTransfer === undefined) {
+      return;
+    }
+    const transfer = this.#activeTransfer;
+    try {
+      await transfer.complete(message);
+      if (this.#state !== "receiving" || this.#activeTransfer !== transfer) return;
+      this.#activeTransfer = undefined;
       this.#activeFileId = undefined;
       this.#transition("browsing");
     } catch (error) {
-      this.#transition("failed");
-      throw error;
+      await this.#failTransfer(error);
     }
+  }
+
+  async #failTransfer(error: unknown): Promise<void> {
+    const transferError =
+      error instanceof TransferError
+        ? error
+        : new TransferError("TRANSFER_FAILED", "Incoming transfer failed.", { cause: error });
+    let reportedError = transferError;
+    try {
+      await this.#activeTransfer?.cancel(transferError);
+    } catch (error) {
+      reportedError =
+        error instanceof TransferError
+          ? error
+          : new TransferError("DESTINATION_FAILED", "Could not abort the destination.", {
+              cause: error,
+            });
+    }
+    this.#activeTransfer = undefined;
+    this.#activeFileId = undefined;
+    this.#peerError = reportedError.code;
+    if (this.#state === "receiving") this.#transition("failed");
+    if (this.#senderPeerId !== undefined) {
+      await this.#transport.send(this.#senderPeerId, {
+        type: "error",
+        protocolVersion: BARROW_ALLEY_PROTOCOL_VERSION,
+        code: reportedError.code,
+      });
+    }
+  }
+
+  #matchesActive(sessionId: string, fileId: string): boolean {
+    return (
+      this.#state === "receiving" &&
+      sessionId === this.#sessionId &&
+      fileId === this.#activeFileId
+    );
+  }
+
+  #isCancelled(sessionId: string, fileId: string): boolean {
+    return (
+      this.#cancelledTransfer?.sessionId === sessionId &&
+      this.#cancelledTransfer.fileId === fileId
+    );
   }
 
   async #performClose(notifySender: boolean): Promise<void> {
@@ -231,16 +389,17 @@ export class ReceiverSession {
         // The sender may already have closed; local cleanup must still complete.
       }
     }
-    if (this.#activeWriter !== undefined) {
-      // Lifecycle cleanup is required now; deciding whether partial bytes can be
-      // committed after transfer failures remains an integrity-layer decision.
-      await this.#activeWriter.abort(new Error("Session closed."));
-      this.#activeWriter = undefined;
+    let cleanupError: unknown;
+    try {
+      await this.#activeTransfer?.cancel(new Error("Session closed."));
+    } catch (error) {
+      cleanupError = error;
     }
+    this.#activeTransfer = undefined;
     this.#unsubscribeMessage();
-    this.#unsubscribeTransfer();
     await this.#transport.close();
     this.#activeFileId = undefined;
     this.#transition("closed");
+    if (cleanupError !== undefined) throw cleanupError;
   }
 }

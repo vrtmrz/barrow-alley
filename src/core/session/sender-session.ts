@@ -2,6 +2,7 @@ import type { Source, SourceItem } from "../files.js";
 import type { ManifestItem } from "../manifest.js";
 import { ProtocolValidationError } from "../protocol/errors.js";
 import type {
+  CancelFileMessage,
   ConnectionRequestMessage,
   ErrorCode,
   ProtocolMessage,
@@ -9,6 +10,9 @@ import type {
 } from "../protocol/messages.js";
 import { parseProtocolMessage } from "../protocol/validation.js";
 import { BARROW_ALLEY_PROTOCOL_VERSION } from "../protocol/version.js";
+import { TransferError } from "../transfer/errors.js";
+import type { TransferProgressHandler } from "../transfer/progress.js";
+import { sendFile } from "../transfer/sender.js";
 import type { Transport } from "../../transport/transport.js";
 import { SessionError } from "./errors.js";
 import { transitionSenderState, type SenderState } from "./state.js";
@@ -20,6 +24,10 @@ export interface SenderSessionOptions {
   readonly source: Source;
   /** Point-to-point capability owned exclusively by this sender session. */
   readonly transport: Transport;
+  /** Internally configurable frame payload size. */
+  readonly chunkSize?: number;
+  /** Optional sender-side progress observer. */
+  readonly onProgress?: TransferProgressHandler;
 }
 
 /**
@@ -33,6 +41,8 @@ export class SenderSession {
   readonly #sessionId: string;
   readonly #source: Source;
   readonly #transport: Transport;
+  readonly #chunkSize: number | undefined;
+  readonly #onProgress: TransferProgressHandler | undefined;
   readonly #knownPeers = new Set<string>();
   readonly #sourceItems = new Map<string, SourceItem>();
   readonly #unsubscribeMessage: () => void;
@@ -40,6 +50,10 @@ export class SenderSession {
   #manifest: readonly ManifestItem[] = [];
   #pendingPeerId: string | undefined;
   #authorisedPeerId: string | undefined;
+  #activeTransferAbort: AbortController | undefined;
+  #activeTransferFileId: string | undefined;
+  #activeTransferPromise: Promise<void> | undefined;
+  #activeTransferPeerError: ErrorCode | undefined;
   #closePromise: Promise<void> | undefined;
 
   constructor(options: SenderSessionOptions) {
@@ -47,6 +61,8 @@ export class SenderSession {
     this.#sessionId = options.sessionId;
     this.#source = options.source;
     this.#transport = options.transport;
+    this.#chunkSize = options.chunkSize;
+    this.#onProgress = options.onProgress;
     this.#unsubscribeMessage = this.#transport.onMessage(async (peerId, payload) => {
       await this.#receiveMessage(peerId, payload);
     });
@@ -204,14 +220,23 @@ export class SenderSession {
       case "request-file":
         await this.#receiveFileRequest(peerId, message);
         return;
+      case "cancel-file":
+        await this.#receiveFileCancellation(peerId, message);
+        return;
       case "cancel-session":
         if (peerId === this.#authorisedPeerId || peerId === this.#pendingPeerId) {
           await this.#performClose(false);
         }
         return;
       case "error":
-        if (peerId === this.#authorisedPeerId && this.#state !== "failed") {
-          this.#transition("failed");
+        if (peerId === this.#authorisedPeerId) {
+          this.#activeTransferPeerError = message.code;
+          this.#activeTransferAbort?.abort(
+            new TransferError("TRANSFER_FAILED", `Peer reported ${message.code}.`),
+          );
+          if (this.#state !== "transferring" && this.#state !== "failed") {
+            this.#transition("failed");
+          }
         }
         return;
       default:
@@ -259,20 +284,84 @@ export class SenderSession {
       return;
     }
 
-    this.#transition("transferring");
-    try {
-      // This is a logical stream hand-off only. Wire framing, backpressure,
-      // progress, and hash verification remain a single Milestone 2 concern.
-      const chunks = await this.#source.open(sourceItem.id);
-      await this.#transport.sendTransfer(peerId, {
-        sessionId: this.#sessionId,
-        fileId: message.fileId,
-        chunks,
-      });
-      this.#transition("serving");
-    } catch (error) {
+    const manifestItem = this.#manifest.find((item) => item.id === message.fileId);
+    if (manifestItem === undefined) {
       this.#transition("failed");
-      throw error;
+      await this.#sendError(peerId, "TRANSFER_FAILED");
+      return;
+    }
+    this.#transition("transferring");
+    const abort = new AbortController();
+    this.#activeTransferAbort = abort;
+    this.#activeTransferFileId = message.fileId;
+    this.#activeTransferPeerError = undefined;
+    const transfer = sendFile({
+      sessionId: this.#sessionId,
+      fileId: message.fileId,
+      sourceItem,
+      manifestItem,
+      source: this.#source,
+      send: async (frame) => this.#transport.send(peerId, frame),
+      ...(this.#chunkSize === undefined ? {} : { chunkSize: this.#chunkSize }),
+      signal: abort.signal,
+      ...(this.#onProgress === undefined ? {} : { onProgress: this.#onProgress }),
+    });
+    const completion = this.#settleFileTransfer(peerId, transfer);
+    this.#activeTransferPromise = completion;
+    try {
+      await completion;
+    } finally {
+      if (this.#activeTransferPromise === completion) {
+        this.#activeTransferAbort = undefined;
+        this.#activeTransferFileId = undefined;
+        this.#activeTransferPromise = undefined;
+        this.#activeTransferPeerError = undefined;
+      }
+    }
+  }
+
+  async #settleFileTransfer(peerId: string, transfer: Promise<void>): Promise<void> {
+    try {
+      await transfer;
+      this.#finishActiveTransfer("serving");
+    } catch (error) {
+      if (this.#activeTransferPeerError !== undefined) {
+        this.#finishActiveTransfer("failed");
+        return;
+      }
+      if (error instanceof TransferError && error.code === "TRANSFER_CANCELLED") {
+        this.#finishActiveTransfer("serving");
+        return;
+      }
+      if (this.#finishActiveTransfer("failed")) {
+        await this.#sendError(peerId, transferErrorCode(error));
+      }
+    }
+  }
+
+  #finishActiveTransfer(next: "serving" | "failed"): boolean {
+    if (this.#state !== "transferring") return false;
+    this.#transition(next);
+    return true;
+  }
+
+  async #receiveFileCancellation(peerId: string, message: CancelFileMessage): Promise<void> {
+    if (
+      peerId !== this.#authorisedPeerId ||
+      message.sessionId !== this.#sessionId ||
+      message.fileId !== this.#activeTransferFileId ||
+      this.#state !== "transferring" ||
+      this.#activeTransferAbort === undefined
+    ) {
+      return;
+    }
+    this.#activeTransferAbort.abort(
+      new TransferError("TRANSFER_CANCELLED", `Transfer cancelled: ${message.fileId}.`),
+    );
+    try {
+      await this.#activeTransferPromise;
+    } catch {
+      // The request handler maps the cancellation and restores the serving state.
     }
   }
 
@@ -306,6 +395,9 @@ export class SenderSession {
   async #performClose(notifyPeers: boolean): Promise<void> {
     if (this.#state === "closed") return;
     if (this.#state !== "closing") this.#transition("closing");
+    this.#activeTransferAbort?.abort(
+      new TransferError("TRANSFER_CANCELLED", "Sender session closed."),
+    );
     if (notifyPeers) {
       // Peer notification is best-effort; local resources must reach `closed`
       // even when a remote endpoint has already disappeared.
@@ -323,12 +415,21 @@ export class SenderSession {
         }),
       );
     }
+    try {
+      await this.#activeTransferPromise;
+    } catch {
+      // Closing owns the final state even when the interrupted transfer failed.
+    }
     this.#unsubscribeMessage();
     await this.#transport.close();
     this.#pendingPeerId = undefined;
     this.#authorisedPeerId = undefined;
     this.#transition("closed");
   }
+}
+
+function transferErrorCode(error: unknown): ErrorCode {
+  return error instanceof TransferError ? error.code : "TRANSFER_FAILED";
 }
 
 function isMessageType(payload: unknown, type: string): boolean {

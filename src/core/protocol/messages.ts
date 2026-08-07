@@ -1,8 +1,7 @@
 import type { ManifestItem } from "../manifest.js";
 
-// These are Milestone 1 control-plane messages. Wire-level file begin/chunk/end
-// frames are intentionally absent until Milestone 2 defines their accounting
-// and integrity rules as one coherent contract.
+// Admission and session-control messages were established in Milestone 1.
+// Milestone 2 adds bounded file frames without changing the admission boundary.
 /** Peer host category used for compatibility and user-facing context, not authority. */
 export type ClientKind = "obsidian" | "browser";
 
@@ -12,8 +11,8 @@ export type DenyReason = "denied" | "busy" | "incompatible";
 /**
  * Stable machine-readable control error reported across the peer boundary.
  *
- * The codes describe what the receiver of a request may safely learn, rather
- * than exposing internal exception text:
+ * The codes describe what the other peer may safely learn, rather than exposing
+ * internal exception text:
  *
  * - `INVALID_MESSAGE` — the payload is structurally invalid, contains an
  *   unsupported value in a validated field or an unknown message type, or is a
@@ -31,13 +30,29 @@ export type DenyReason = "denied" | "busy" | "incompatible";
  *   deliberately also covers a wrong session ID, an unauthorised peer, and a
  *   sender state which cannot serve files, so the response does not confirm
  *   whether a guessed file ID exists.
+ * - `SOURCE_CHANGED` — the sender's current bytes no longer match the accepted
+ *   manifest, so the pitch must be set up again.
+ * - `TRANSFER_CANCELLED` — the active file transfer was intentionally stopped.
+ * - `TRANSFER_FAILED` — framing, range accounting, or another transfer
+ *   invariant failed without a more specific safe code.
+ * - `SIZE_MISMATCH` — declared, sent, and received byte counts disagree.
+ * - `HASH_MISMATCH` — the sender, manifest, or locally calculated SHA-256 values
+ *   disagree.
+ * - `DESTINATION_FAILED` — the receiver could not create, write, complete, or
+ *   clean up its destination.
  */
 export type ErrorCode =
   | "INVALID_MESSAGE"
   | "INCOMPATIBLE_PROTOCOL"
   | "BUSY"
   | "UNKNOWN_FILE"
-  | "SESSION_CLOSED";
+  | "SESSION_CLOSED"
+  | "SOURCE_CHANGED"
+  | "TRANSFER_CANCELLED"
+  | "TRANSFER_FAILED"
+  | "SIZE_MISMATCH"
+  | "HASH_MISMATCH"
+  | "DESTINATION_FAILED";
 
 interface VersionedMessage {
   /** Protocol version validated before any message-specific field is consumed. */
@@ -82,6 +97,44 @@ export interface RequestFileMessage extends VersionedMessage {
   readonly fileId: string;
 }
 
+/** Starts one authorised, manifest-scoped file transfer. */
+export interface FileBeginMessage extends VersionedMessage {
+  readonly type: "file-begin";
+  readonly sessionId: string;
+  readonly fileId: string;
+  readonly displayName: string;
+  readonly size: number;
+  readonly hash: string;
+  /** Maximum payload bytes in each following `FileChunkMessage`. */
+  readonly chunkSize: number;
+}
+
+/** Carries one exact, ordered byte range for the active file. */
+export interface FileChunkMessage extends VersionedMessage {
+  readonly type: "file-chunk";
+  readonly sessionId: string;
+  readonly fileId: string;
+  readonly index: number;
+  readonly offset: number;
+  readonly data: Uint8Array;
+}
+
+/** Reports the sender's final byte count and hash for receiver verification. */
+export interface FileEndMessage extends VersionedMessage {
+  readonly type: "file-end";
+  readonly sessionId: string;
+  readonly fileId: string;
+  readonly bytesSent: number;
+  readonly hash: string;
+}
+
+/** Cancels only the named active file while leaving the accepted session open. */
+export interface CancelFileMessage extends VersionedMessage {
+  readonly type: "cancel-file";
+  readonly sessionId: string;
+  readonly fileId: string;
+}
+
 /** Requests lifecycle shutdown; it does not represent per-file cancellation. */
 export interface CancelSessionMessage extends VersionedMessage {
   readonly type: "cancel-session";
@@ -95,7 +148,7 @@ export interface ErrorMessage extends VersionedMessage {
   readonly code: ErrorCode;
 }
 
-/** Every control-plane payload accepted by the Milestone 1 session layer. */
+/** Every peer payload accepted by the host-neutral session layer. */
 export type ProtocolMessage =
   | HelloMessage
   | ConnectionRequestMessage
@@ -103,5 +156,9 @@ export type ProtocolMessage =
   | DenyMessage
   | ManifestMessage
   | RequestFileMessage
+  | FileBeginMessage
+  | FileChunkMessage
+  | FileEndMessage
+  | CancelFileMessage
   | CancelSessionMessage
   | ErrorMessage;

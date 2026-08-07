@@ -9,6 +9,7 @@ export type { ManifestItem } from "./manifest.js";
 export { ProtocolValidationError } from "./protocol/errors.js";
 export type {
   AcceptMessage,
+  CancelFileMessage,
   CancelSessionMessage,
   ClientKind,
   ConnectionRequestMessage,
@@ -16,6 +17,9 @@ export type {
   DenyReason,
   ErrorCode,
   ErrorMessage,
+  FileBeginMessage,
+  FileChunkMessage,
+  FileEndMessage,
   HelloMessage,
   ManifestMessage,
   ProtocolMessage,
@@ -33,3 +37,15 @@ export {
   type ReceiverState,
   type SenderState,
 } from "./session/state.js";
+export { TransferError, type TransferErrorCode } from "./transfer/errors.js";
+export { sha256Hex } from "./transfer/integrity.js";
+export {
+  DEFAULT_TRANSFER_CHUNK_SIZE_BYTES,
+  MAX_BUFFERED_FILE_SIZE_BYTES,
+  MAX_TRANSFER_CHUNK_SIZE_BYTES,
+} from "./transfer/limits.js";
+export {
+  type TransferProgress,
+  type TransferProgressHandler,
+} from "./transfer/progress.js";
+export { IncomingFileTransfer, type IncomingFileTransferOptions } from "./transfer/receiver.js";
