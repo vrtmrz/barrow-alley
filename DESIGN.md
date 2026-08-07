@@ -1061,6 +1061,7 @@ Suggested categories:
 
 ```ts
 export type ErrorCode =
+  | "INVALID_MESSAGE"
   | "INVALID_NUMBER"
   | "NO_RELAYS"
   | "RELAY_UNAVAILABLE"
@@ -1081,6 +1082,23 @@ export type ErrorCode =
   | "DESTINATION_FAILED"
   | "SESSION_CLOSED";
 ```
+
+Milestone 1 uses the following control-plane subset. These codes describe what
+may safely be reported across the peer boundary; they do not expose arbitrary
+exception text.
+
+| Code | When it applies | Boundary and disclosure rule |
+| --- | --- | --- |
+| `INVALID_MESSAGE` | A payload is structurally invalid, contains an unsupported value in a validated field or an unknown message type, or uses a recognised message type which the receiving role does not accept in that context. | A missing or malformed `protocolVersion` is invalid rather than incompatible. Local diagnostic text is not sent to the peer. |
+| `INCOMPATIBLE_PROTOCOL` | `protocolVersion` is a valid integer which the receiver does not support. | An incompatible `connection-request` is answered with `deny.reason = "incompatible"`; other control messages may receive this error code. |
+| `BUSY` | The accepted peer requests another file while one transfer is active. | A competing admission request is answered with `deny.reason = "busy"` because that peer has not been accepted. |
+| `UNKNOWN_FILE` | The accepted peer requests an ID which is absent from its disclosed manifest. | The receiver rejects an undisclosed ID locally before sending a request. The sender uses this code only after peer and session authorisation checks pass. |
+| `SESSION_CLOSED` | The requested session is unavailable to the requesting peer. | This also covers an unauthorised peer, a wrong session ID, and a sender state which cannot serve files. The shared response avoids confirming whether a guessed file ID exists. |
+
+`ProtocolValidationErrorCode` is a local parser classification. The session
+layer decides whether to map it to an `ErrorMessage`, an admission
+`DenyMessage`, or a local failure. By contrast, `ErrorCode` is the stable code
+carried by an `ErrorMessage` on the wire.
 
 The UI maps codes to actionable messages.
 

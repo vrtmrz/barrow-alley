@@ -32,6 +32,8 @@
   "include": [
     "scripts/**/*.ts",
     "src/**/*.ts",
+    "test/fixtures/**/*.ts",
+    "test/integration/**/*.ts",
     "test/unit/**/*.ts",
     "vitest.config.ts"
   ]

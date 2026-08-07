@@ -1,0 +1,1 @@
+export const BARROW_ALLEY_PROTOCOL_VERSION = 1;

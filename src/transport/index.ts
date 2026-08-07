@@ -1,3 +1,11 @@
-/** Host-neutral transport contracts will be exported here in Milestone 1. */
-export {};
-
+export {
+  InMemoryTransport,
+  InMemoryTransportNetwork,
+  TransportError,
+} from "./in-memory-transport.js";
+export type {
+  IncomingTransfer,
+  MessageHandler,
+  TransferHandler,
+  Transport,
+} from "./transport.js";
