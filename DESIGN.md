@@ -5,7 +5,7 @@
 Status: Draft baseline for implementation  
 Primary product: Obsidian Community Plugin  
 Secondary product: Browser interoperability test client  
-Audience: Maintainers and coding agents such as Codex
+Audience: Maintainers and contributors
 
 ---
 
@@ -39,7 +39,7 @@ The primary implementation is an Obsidian Community Plugin. A small browser clie
 
 ### Meaning
 
-The name evokes setting up a temporary market pitch in a slightly dubious but friendly alley, where a neighbour—or another of the sender’s own devices—can choose the files they need. The metaphor stops at *pitch* and *visitor*; security explanations and state messages must remain direct and unambiguous.
+Barrow Alley uses the limited user-facing metaphor of a temporary pitch: the sender sets it up, and a visitor chooses the files they need. The metaphor stops at *pitch* and *visitor*; security explanations and state messages must remain direct and unambiguous.
 
 ### Core language
 
@@ -483,7 +483,7 @@ Do not provide a misleading `Test relays` button that implies full end-to-end co
 ### WebRTC diagnostics
 
 Wrap each Barrow Alley Trystero room's `RTCPeerConnection` constructor with the
-diagnostic approach proven in Self-hosted LiveSync. Keep the wrapper scoped to
+diagnostic approach used in Self-hosted LiveSync. Keep the wrapper scoped to
 that room rather than replacing the global constructor. It may observe
 connection, ICE connection, ICE gathering, and signalling state histories, and
 selected candidate-pair counters from `getStats()`.
@@ -1038,7 +1038,7 @@ It is not a separate architectural product and does not justify a monorepo.
 
 README wording should be candid:
 
-> This repository also contains a small browser interoperability client under `test/web`. It is used to test the Barrow Alley protocol without Obsidian and is published as a convenience client.
+> This repository also contains a small browser interoperability client under `test/web`. It is intended to test the Barrow Alley protocol without Obsidian and, once complete, provide a convenience client.
 
 ## 13.2 Functionality
 
@@ -1311,7 +1311,7 @@ Do not promise very large-file support before measuring memory use on Obsidian m
 
 ## 16. Implementation milestones
 
-Codex should work milestone by milestone. Each milestone should leave the repository building and tests passing.
+Implementation should proceed milestone by milestone. Each milestone should leave the repository building and tests passing.
 
 ## Milestone 0 — Repository bootstrap and boundaries
 
@@ -1471,85 +1471,7 @@ Acceptance:
 
 ---
 
-## 17. Codex operating instructions
-
-Place the following principles in `AGENTS.md` or give them to Codex at task start.
-
-### Required behaviour
-
-- Read this design before editing.
-- Work one milestone or one narrowly defined issue at a time.
-- Inspect existing LiveSync and Fancy Kit code only for relevant reusable patterns.
-- Keep core logic host-neutral.
-- Add behavioural tests before or with non-trivial protocol changes.
-- Run the narrowest relevant tests during iteration.
-- Run the full check command before declaring a milestone complete.
-- Report assumptions and any design deviation.
-- Prefer a small, direct implementation over a reusable framework without a second consumer.
-- Preserve British English in repository-facing documentation if that is the repository convention.
-
-### Prohibited behaviour
-
-- Do not create a monorepo or npm workspace.
-- Do not split core into a published package.
-- Do not add QR codes or a long random token.
-- Do not add TURN, accounts, pairing, history, or synchronisation.
-- Do not expose manifest data before sender acceptance.
-- Do not expand Fancy Kit with Barrow Alley-specific binary abstractions.
-- Do not use unbounded whole-file buffering without an explicit measured limit.
-- Do not silently overwrite destination files.
-- Do not commit, push, tag, publish, or open a pull request unless explicitly asked.
-- Do not weaken tests merely to make them pass.
-- Do not claim completion when browser/Obsidian boundaries are bypassed with placeholders.
-
-### When ambiguity appears
-
-Use this priority:
-
-1. Security and no-pre-accept disclosure.
-2. Correct lifecycle cleanup.
-3. Data integrity.
-4. Obsidian Community Plugin compatibility.
-5. Simple user experience.
-6. Browser convenience.
-7. Generalisation and future extensibility.
-
-If a decision affects scope or the security model, stop and report it rather than silently inventing a new feature.
-
----
-
-## 18. Suggested initial Codex task
-
-A good first implementation prompt is:
-
-```text
-Read DESIGN.md and AGENTS.md.
-
-Implement Milestone 0 only: establish the standard Obsidian plugin repository
-shape, test runner, browser interoperability harness under test/web, and
-enforced dependency boundaries.
-
-Do not implement Trystero, protocol messages, file transfer, QR codes, or any
-networking.
-
-Use one root package.json and one lockfile. This must not become a monorepo or
-workspace.
-
-Before editing, inspect the repository and relevant Fancy Kit public entry
-points. Then implement, run the relevant build/tests, and report:
-- files changed;
-- commands run;
-- remaining assumptions;
-- anything in the repository that conflicts with DESIGN.md.
-
-Do not commit, push, publish, or open a PR.
-```
-
-After review, assign Milestone 1 separately.
-
----
-
-## 19. Definition of done for the initial release
+## 17. Definition of done for the initial release
 
 The initial release is done when:
 
@@ -1573,7 +1495,7 @@ The initial release is done when:
 
 ---
 
-## 20. Design principle
+## 18. Design principle
 
 When implementation choices are unclear, return to this sentence:
 

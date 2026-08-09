@@ -12,6 +12,6 @@ The plug-in settings and browser interoperability client accept one `wss://` Nos
 
 The Obsidian sender's waiting dialogue uses local WebRTC state and aggregate connection counters to show direct-connection attempts, progress, and failures. These diagnostics do not include SDP, candidate addresses, candidate IDs, raw WebRTC statistics, Vault information, or file metadata.
 
-This repository also contains a small browser interoperability client under `test/web`. It is used to test the Barrow Alley protocol without Obsidian and is published as a convenience client.
+This repository also contains a small browser interoperability client under `test/web`. It is intended to test the Barrow Alley protocol without Obsidian and, once complete, provide a convenience client.
 
 See [DESIGN.md](DESIGN.md) for the complete product and implementation design.
