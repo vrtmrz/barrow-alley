@@ -243,7 +243,7 @@ export class TrysteroTransport implements PeerAwareTransport {
             if (isDisconnectedError(error)) {
                 throw new ConnectionError(
                     "PEER_DISCONNECTED",
-                    "The peer disconnected before the message could be sent.",
+                    "The other device disconnected before the message could be sent.",
                     error,
                 );
             }
@@ -321,7 +321,7 @@ export class TrysteroTransport implements PeerAwareTransport {
     reportJoinError(details: TrysteroJoinError): void {
         const failure = new ConnectionError(
             "WEBRTC_CONNECTION_FAILED",
-            "The peer was discovered, but Barrow Alley could not establish a direct connection.",
+            "The other device was found, but Barrow Alley could not establish a direct connection.",
             new Error(details.error),
         );
         this.#joinFailure = failure;
@@ -391,7 +391,7 @@ export async function createTrysteroTransport(
         if (!(error instanceof RelaySettingsError)) throw error;
         throw new ConnectionError(
             "NO_VALID_RELAYS",
-            "Configure at least one valid Nostr relay before setting up a pitch.",
+            "Configure at least one valid Nostr relay before starting.",
             error,
         );
     }
