@@ -4,7 +4,7 @@
 
 > **Set up a pitch. Share the number. Let them choose.**
 
-Barrow Alley is being built as an Obsidian Community Plugin for temporary, sender-approved file handoff. Its host-neutral protocol, integrity-checked transfer core, Trystero transport, and Obsidian sender flow are implemented. The plug-in can set up a pitch for the current file, a File Explorer selection, or files chosen in its multi-file picker; the Obsidian receiver flow is not yet implemented.
+Barrow Alley is an Obsidian plug-in for temporary, sender-approved file handoff. It can set up a pitch for the current file, a File Explorer selection, or files chosen in its multi-file picker. It can also receive files into a chosen Vault folder, with explicit conflict handling and integrity verification before saving.
 
 The current implementation supports files up to 100 MiB each. It reads one complete file into memory while verifying it.
 
@@ -12,6 +12,6 @@ The plug-in settings and browser interoperability client accept one `wss://` Nos
 
 The Obsidian sender's waiting dialogue uses local WebRTC state and aggregate connection counters to show direct-connection attempts, progress, and failures. These diagnostics do not include SDP, candidate addresses, candidate IDs, raw WebRTC statistics, Vault information, or file metadata.
 
-This repository also contains a small browser interoperability client under `test/web`. It is intended to test the Barrow Alley protocol without Obsidian and, once complete, provide a convenience client.
+This repository also contains a small browser interoperability client under `test/web`. It can set up or visit a pitch, and is built separately from the Obsidian plug-in. It is intended for protocol interoperability testing and as a convenience client; it is not currently deployed by this repository.
 
 See [DESIGN.md](DESIGN.md) for the complete product and implementation design.

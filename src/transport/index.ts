@@ -18,6 +18,11 @@ export {
     createDiagnosticRTCPeerConnectionConstructor,
     diagnoseRtcFailure,
 } from "./rtc-diagnostics.js";
+export {
+    presentRtcDiagnostic,
+    type RtcDiagnosticPeerLabel,
+    type RtcDiagnosticPresentation,
+} from "./rtc-diagnostic-presentation.js";
 export type {
     RtcDiagnosticEvent,
     RtcDiagnosticMetrics,

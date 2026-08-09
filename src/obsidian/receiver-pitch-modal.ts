@@ -227,7 +227,7 @@ export class BarrowAlleyReceiverPitchModal extends Modal implements ReceiverPitc
             diagnostic === undefined || message === undefined ||
             totals === undefined
         ) return;
-        const presentation = presentRtcDiagnostic(event);
+        const presentation = presentRtcDiagnostic(event, "sender");
         diagnostic.hidden = false;
         diagnostic.toggleAttribute("data-error", presentation.isFailure);
         diagnostic.setAttribute(

@@ -49,6 +49,9 @@ describe("RTC diagnostic presentation", () => {
         expect(presentRtcDiagnostic(status("closed", "closed")).message).toBe(
             "The direct connection was closed.",
         );
+        expect(presentRtcDiagnostic(status("new", "checking"), "sender").message).toBe(
+            "A sender was found. Checking a direct connection…",
+        );
     });
 
     it("uses the sanitised diagnosis for a failed connection", () => {
