@@ -16,16 +16,16 @@ export type ProtocolValidationErrorCode = "INVALID_MESSAGE" | "INCOMPATIBLE_PROT
  * not be forwarded to a peer as user-facing or protocol text.
  */
 export class ProtocolValidationError extends Error {
-  /** Stable local category which a session may map to a protocol response. */
-  readonly code: ProtocolValidationErrorCode;
+    /** Stable local category which a session may map to a protocol response. */
+    readonly code: ProtocolValidationErrorCode;
 
-  /**
-   * @param code Stable reason for rejecting the payload.
-   * @param message Local diagnostic detail; it is not part of the wire protocol.
-   */
-  constructor(code: ProtocolValidationErrorCode, message: string) {
-    super(message);
-    this.name = "ProtocolValidationError";
-    this.code = code;
-  }
+    /**
+     * @param code Stable reason for rejecting the payload.
+     * @param message Local diagnostic detail; it is not part of the wire protocol.
+     */
+    constructor(code: ProtocolValidationErrorCode, message: string) {
+        super(message);
+        this.name = "ProtocolValidationError";
+        this.code = code;
+    }
 }

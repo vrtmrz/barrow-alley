@@ -1,17 +1,17 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "types": [
-      "node",
-      "vitest"
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "types": [
+            "node",
+            "vitest"
+        ]
+    },
+    "include": [
+        "scripts/**/*.ts",
+        "test/e2e/**/*.ts",
+        "test/fixtures/**/*.ts",
+        "test/integration/**/*.ts",
+        "test/unit/**/*.ts",
+        "vitest.config.ts"
     ]
-  },
-  "include": [
-    "scripts/**/*.ts",
-    "test/e2e/**/*.ts",
-    "test/fixtures/**/*.ts",
-    "test/integration/**/*.ts",
-    "test/unit/**/*.ts",
-    "vitest.config.ts"
-  ]
 }

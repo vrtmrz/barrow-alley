@@ -5,5 +5,4 @@
  * Keep direct global access here so production modules remain explicit about
  * crossing that runtime boundary.
  */
-export const compatGlobal: typeof globalThis =
-  typeof window === "undefined" ? globalThis : window;
+export const compatGlobal: typeof globalThis = typeof window === "undefined" ? globalThis : window;

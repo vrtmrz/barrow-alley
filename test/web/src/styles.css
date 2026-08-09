@@ -1,133 +1,133 @@
 :root {
-  color: #25231f;
-  background: #f4efe5;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+    color: #25231f;
+    background: #f4efe5;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
 }
 
 body {
-  margin: 0;
-  min-width: 20rem;
-  min-height: 100vh;
+    margin: 0;
+    min-width: 20rem;
+    min-height: 100vh;
 }
 
 main {
-  display: grid;
-  min-height: 100vh;
-  padding: 2rem;
-  box-sizing: border-box;
-  place-items: center;
+    display: grid;
+    min-height: 100vh;
+    padding: 2rem;
+    box-sizing: border-box;
+    place-items: center;
 }
 
 section {
-  width: min(32rem, 100%);
-  padding: clamp(2rem, 8vw, 4rem);
-  border: 1px solid #c8bfae;
-  border-radius: 1.5rem;
-  background: #fffaf0;
-  box-shadow: 0 1.5rem 4rem rgb(74 59 35 / 12%);
+    width: min(32rem, 100%);
+    padding: clamp(2rem, 8vw, 4rem);
+    border: 1px solid #c8bfae;
+    border-radius: 1.5rem;
+    background: #fffaf0;
+    box-shadow: 0 1.5rem 4rem rgb(74 59 35 / 12%);
 }
 
 .eyebrow {
-  margin: 0 0 1rem;
-  color: #725b2e;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+    margin: 0 0 1rem;
+    color: #725b2e;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
 }
 
 h1 {
-  margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(3rem, 12vw, 5.5rem);
-  font-weight: 500;
-  line-height: 0.95;
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(3rem, 12vw, 5.5rem);
+    font-weight: 500;
+    line-height: 0.95;
 }
 
 .tagline {
-  margin: 1.5rem 0 0;
-  font-size: 1.15rem;
-  line-height: 1.6;
+    margin: 1.5rem 0 0;
+    font-size: 1.15rem;
+    line-height: 1.6;
 }
 
 .settings {
-  margin: 2.5rem 0 0;
-  padding-top: 1rem;
-  border-top: 1px solid #d8cfbf;
-  color: #5d574e;
-  line-height: 1.5;
+    margin: 2.5rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid #d8cfbf;
+    color: #5d574e;
+    line-height: 1.5;
 }
 
 .settings h2 {
-  margin: 0 0 0.75rem;
-  color: #25231f;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.5rem;
-  font-weight: 500;
+    margin: 0 0 0.75rem;
+    color: #25231f;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.5rem;
+    font-weight: 500;
 }
 
 .settings p {
-  margin: 0.4rem 0;
+    margin: 0.4rem 0;
 }
 
 .settings label {
-  display: block;
-  margin: 1rem 0 0.35rem;
-  color: #25231f;
-  font-weight: 700;
+    display: block;
+    margin: 1rem 0 0.35rem;
+    color: #25231f;
+    font-weight: 700;
 }
 
 .settings textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.75rem;
-  border: 1px solid #aa9e89;
-  border-radius: 0.5rem;
-  background: #fff;
-  color: #25231f;
-  font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
-  resize: vertical;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem;
+    border: 1px solid #aa9e89;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: #25231f;
+    font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+    resize: vertical;
 }
 
 .settings textarea:focus {
-  border-color: #725b2e;
-  outline: 2px solid rgb(114 91 46 / 25%);
+    border-color: #725b2e;
+    outline: 2px solid rgb(114 91 46 / 25%);
 }
 
 .settings-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
 }
 
 .settings button {
-  padding: 0.6rem 0.9rem;
-  border: 1px solid #725b2e;
-  border-radius: 999px;
-  background: #725b2e;
-  color: #fff;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 700;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid #725b2e;
+    border-radius: 999px;
+    background: #725b2e;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
 }
 
 .settings button.secondary {
-  background: transparent;
-  color: #725b2e;
+    background: transparent;
+    color: #725b2e;
 }
 
 .settings button:hover {
-  filter: brightness(0.92);
+    filter: brightness(0.92);
 }
 
 .feedback {
-  color: #416341;
-  font-weight: 700;
+    color: #416341;
+    font-weight: 700;
 }
 
 .feedback.error {
-  color: #9d2f2f;
+    color: #9d2f2f;
 }

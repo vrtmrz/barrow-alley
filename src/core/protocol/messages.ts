@@ -42,123 +42,123 @@ export type DenyReason = "denied" | "busy" | "incompatible";
  *   clean up its destination.
  */
 export type ErrorCode =
-  | "INVALID_MESSAGE"
-  | "INCOMPATIBLE_PROTOCOL"
-  | "BUSY"
-  | "UNKNOWN_FILE"
-  | "SESSION_CLOSED"
-  | "SOURCE_CHANGED"
-  | "TRANSFER_CANCELLED"
-  | "TRANSFER_FAILED"
-  | "SIZE_MISMATCH"
-  | "HASH_MISMATCH"
-  | "DESTINATION_FAILED";
+    | "INVALID_MESSAGE"
+    | "INCOMPATIBLE_PROTOCOL"
+    | "BUSY"
+    | "UNKNOWN_FILE"
+    | "SESSION_CLOSED"
+    | "SOURCE_CHANGED"
+    | "TRANSFER_CANCELLED"
+    | "TRANSFER_FAILED"
+    | "SIZE_MISMATCH"
+    | "HASH_MISMATCH"
+    | "DESTINATION_FAILED";
 
 interface VersionedMessage {
-  /** Protocol version validated before any message-specific field is consumed. */
-  readonly protocolVersion: number;
+    /** Protocol version validated before any message-specific field is consumed. */
+    readonly protocolVersion: number;
 }
 
 /** Pre-admission compatibility information which causes no authorisation change. */
 export interface HelloMessage extends VersionedMessage {
-  readonly type: "hello";
-  readonly clientKind: ClientKind;
+    readonly type: "hello";
+    readonly clientKind: ClientKind;
 }
 
 /** Requests sender approval without including or requesting file metadata. */
 export interface ConnectionRequestMessage extends VersionedMessage {
-  readonly type: "connection-request";
-  readonly clientKind: ClientKind;
+    readonly type: "connection-request";
+    readonly clientKind: ClientKind;
 }
 
 /** Authorises exactly one peer for the named internal session. */
 export interface AcceptMessage extends VersionedMessage {
-  readonly type: "accept";
-  readonly sessionId: string;
+    readonly type: "accept";
+    readonly sessionId: string;
 }
 
 /** Rejects an admission request without disclosing a session ID or file details. */
 export interface DenyMessage extends VersionedMessage {
-  readonly type: "deny";
-  readonly reason?: DenyReason;
+    readonly type: "deny";
+    readonly reason?: DenyReason;
 }
 
 /** File metadata sent only after the same peer has received `AcceptMessage`. */
 export interface ManifestMessage extends VersionedMessage {
-  readonly type: "manifest";
-  readonly sessionId: string;
-  readonly items: readonly ManifestItem[];
+    readonly type: "manifest";
+    readonly sessionId: string;
+    readonly items: readonly ManifestItem[];
 }
 
 /** Requests one opaque ID from the accepted session manifest. */
 export interface RequestFileMessage extends VersionedMessage {
-  readonly type: "request-file";
-  readonly sessionId: string;
-  readonly fileId: string;
+    readonly type: "request-file";
+    readonly sessionId: string;
+    readonly fileId: string;
 }
 
 /** Starts one authorised, manifest-scoped file transfer. */
 export interface FileBeginMessage extends VersionedMessage {
-  readonly type: "file-begin";
-  readonly sessionId: string;
-  readonly fileId: string;
-  readonly displayName: string;
-  readonly size: number;
-  readonly hash: string;
-  /** Maximum payload bytes in each following `FileChunkMessage`. */
-  readonly chunkSize: number;
+    readonly type: "file-begin";
+    readonly sessionId: string;
+    readonly fileId: string;
+    readonly displayName: string;
+    readonly size: number;
+    readonly hash: string;
+    /** Maximum payload bytes in each following `FileChunkMessage`. */
+    readonly chunkSize: number;
 }
 
 /** Carries one exact, ordered byte range for the active file. */
 export interface FileChunkMessage extends VersionedMessage {
-  readonly type: "file-chunk";
-  readonly sessionId: string;
-  readonly fileId: string;
-  readonly index: number;
-  readonly offset: number;
-  readonly data: Uint8Array;
+    readonly type: "file-chunk";
+    readonly sessionId: string;
+    readonly fileId: string;
+    readonly index: number;
+    readonly offset: number;
+    readonly data: Uint8Array;
 }
 
 /** Reports the sender's final byte count and hash for receiver verification. */
 export interface FileEndMessage extends VersionedMessage {
-  readonly type: "file-end";
-  readonly sessionId: string;
-  readonly fileId: string;
-  readonly bytesSent: number;
-  readonly hash: string;
+    readonly type: "file-end";
+    readonly sessionId: string;
+    readonly fileId: string;
+    readonly bytesSent: number;
+    readonly hash: string;
 }
 
 /** Cancels only the named active file while leaving the accepted session open. */
 export interface CancelFileMessage extends VersionedMessage {
-  readonly type: "cancel-file";
-  readonly sessionId: string;
-  readonly fileId: string;
+    readonly type: "cancel-file";
+    readonly sessionId: string;
+    readonly fileId: string;
 }
 
 /** Requests lifecycle shutdown; it does not represent per-file cancellation. */
 export interface CancelSessionMessage extends VersionedMessage {
-  readonly type: "cancel-session";
-  // A receiver awaiting approval does not know the accepted session ID yet.
-  readonly sessionId?: string;
+    readonly type: "cancel-session";
+    // A receiver awaiting approval does not know the accepted session ID yet.
+    readonly sessionId?: string;
 }
 
 /** Reports a stable control failure without forwarding arbitrary peer text. */
 export interface ErrorMessage extends VersionedMessage {
-  readonly type: "error";
-  readonly code: ErrorCode;
+    readonly type: "error";
+    readonly code: ErrorCode;
 }
 
 /** Every peer payload accepted by the host-neutral session layer. */
 export type ProtocolMessage =
-  | HelloMessage
-  | ConnectionRequestMessage
-  | AcceptMessage
-  | DenyMessage
-  | ManifestMessage
-  | RequestFileMessage
-  | FileBeginMessage
-  | FileChunkMessage
-  | FileEndMessage
-  | CancelFileMessage
-  | CancelSessionMessage
-  | ErrorMessage;
+    | HelloMessage
+    | ConnectionRequestMessage
+    | AcceptMessage
+    | DenyMessage
+    | ManifestMessage
+    | RequestFileMessage
+    | FileBeginMessage
+    | FileChunkMessage
+    | FileEndMessage
+    | CancelFileMessage
+    | CancelSessionMessage
+    | ErrorMessage;

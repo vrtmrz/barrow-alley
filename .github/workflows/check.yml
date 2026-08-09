@@ -1,28 +1,28 @@
 name: Check
 
 on:
-  push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
+    push:
+        branches: ["**"]
+    pull_request:
+        branches: ["**"]
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [22.x, 24.x]
-    env:
-      NODE_OPTIONS: --max-old-space-size=3072
-    steps:
-      - uses: actions/checkout@v6
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: npm
-      - run: npm ci
-      - name: Check plug-in
-        run: npm run check
-      - name: Check browser harness
-        run: npm run check:web
+    check:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [22.x, 24.x]
+        env:
+            NODE_OPTIONS: --max-old-space-size=3072
+        steps:
+            - uses: actions/checkout@v6
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v6
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: npm
+            - run: npm ci
+            - name: Check plug-in
+              run: npm run check
+            - name: Check browser harness
+              run: npm run check:web

@@ -1,87 +1,87 @@
 .barrow-alley-pitch__summary {
-  color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 .barrow-alley-pitch__number {
-  margin-block: 0.25rem 1rem;
-  font-size: 2rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  user-select: all;
+    margin-block: 0.25rem 1rem;
+    font-size: 2rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    user-select: all;
 }
 
 .barrow-alley-pitch__status[data-error] {
-  color: var(--text-error);
+    color: var(--text-error);
 }
 
 .barrow-alley-pitch__diagnostic {
-  margin-block: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  background: var(--background-secondary);
+    margin-block: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    background: var(--background-secondary);
 }
 
 .barrow-alley-pitch__diagnostic p {
-  margin-block: 0.35rem 0;
+    margin-block: 0.35rem 0;
 }
 
 .barrow-alley-pitch__diagnostic[data-error] {
-  border-color: var(--background-modifier-error);
+    border-color: var(--background-modifier-error);
 }
 
 .barrow-alley-pitch__diagnostic[data-error] > p:first-of-type {
-  color: var(--text-error);
+    color: var(--text-error);
 }
 
 .barrow-alley-pitch__diagnostic-totals {
-  color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
-  font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    font-variant-numeric: tabular-nums;
 }
 
 .barrow-alley-pitch__approval {
-  margin-block: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  background: var(--background-secondary);
+    margin-block: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    background: var(--background-secondary);
 }
 
 .barrow-alley-pitch__approval h3 {
-  margin-top: 0;
+    margin-top: 0;
 }
 
 .barrow-alley-pitch__approval-buttons,
 .barrow-alley-pitch__footer,
 .barrow-alley-file-picker__footer {
-  display: flex;
-  gap: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
 }
 
 .barrow-alley-pitch__footer,
 .barrow-alley-file-picker__footer {
-  justify-content: flex-end;
-  margin-top: 1rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
 }
 
 .barrow-alley-file-picker__search {
-  width: 100%;
-  margin-bottom: 0.75rem;
+    width: 100%;
+    margin-bottom: 0.75rem;
 }
 
 .barrow-alley-file-picker__results {
-  display: flex;
-  flex-direction: column;
-  max-height: min(50vh, 30rem);
-  overflow-y: auto;
-  border-block: 1px solid var(--background-modifier-border);
+    display: flex;
+    flex-direction: column;
+    max-height: min(50vh, 30rem);
+    overflow-y: auto;
+    border-block: 1px solid var(--background-modifier-border);
 }
 
 .barrow-alley-file-picker__row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: baseline;
-  padding: 0.4rem 0.25rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.4rem 0.25rem;
 }
