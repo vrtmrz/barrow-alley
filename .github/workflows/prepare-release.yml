@@ -24,7 +24,7 @@ jobs:
               id: release
               run: npm run prepare:release
             - name: Upload plug-in assets
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
                   name: barrow-alley-${{ steps.release.outputs.version }}
                   if-no-files-found: error

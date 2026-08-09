@@ -87,7 +87,7 @@ describe("release preparation", () => {
 
         expect(workflow).toContain("workflow_dispatch:");
         expect(workflow).toContain("contents: read");
-        expect(workflow).toContain("uses: actions/upload-artifact@v4");
+        expect(workflow).toContain("uses: actions/upload-artifact@v7");
         expect(workflow).toContain("build/release/main.js");
         expect(workflow).toContain("build/release/manifest.json");
         expect(workflow).toContain("build/release/styles.css");
