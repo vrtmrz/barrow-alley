@@ -36,6 +36,7 @@ export { ReceiverSession, type ReceiverSessionOptions } from "./session/receiver
 export { SenderSession, type SenderSessionOptions } from "./session/sender-session.js";
 export {
     type ReceiverState,
+    type ReceiverStateHandler,
     type SenderState,
     type SenderStateHandler,
     SessionStateError,

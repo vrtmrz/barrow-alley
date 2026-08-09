@@ -167,8 +167,7 @@ export class SenderSession {
 
     /** Closes transport-owned resources. Repeated calls return the same operation. */
     close(): Promise<void> {
-        this.#closePromise ??= this.#performClose(true);
-        return this.#closePromise;
+        return this.#requestClose(true);
     }
 
     #transition(next: SenderState): void {
@@ -240,7 +239,7 @@ export class SenderSession {
                 return;
             case "cancel-session":
                 if (peerId === this.#authorisedPeerId || peerId === this.#pendingPeerId) {
-                    await this.#performClose(false);
+                    await this.#requestClose(false);
                 }
                 return;
             case "error":
@@ -405,6 +404,14 @@ export class SenderSession {
             protocolVersion: BARROW_ALLEY_PROTOCOL_VERSION,
             code,
         });
+    }
+
+    #requestClose(notifyPeers: boolean): Promise<void> {
+        // Local UI close and a peer cancellation can arrive in the same task turn.
+        // Whichever starts first owns the one cleanup operation and all callers
+        // observe that promise instead of racing a second terminal transition.
+        this.#closePromise ??= this.#performClose(notifyPeers);
+        return this.#closePromise;
     }
 
     async #performClose(notifyPeers: boolean): Promise<void> {

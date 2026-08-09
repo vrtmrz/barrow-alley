@@ -16,7 +16,7 @@ import type { TransferProgressHandler } from "../transfer/progress.js";
 import { IncomingFileTransfer } from "../transfer/receiver.js";
 import type { Transport } from "../../transport/transport.js";
 import { SessionError } from "./errors.js";
-import { type ReceiverState, transitionReceiverState } from "./state.js";
+import { type ReceiverState, type ReceiverStateHandler, transitionReceiverState } from "./state.js";
 
 export interface ReceiverSessionOptions {
     /** Host category announced during admission; it grants no authority. */
@@ -27,6 +27,8 @@ export interface ReceiverSessionOptions {
     readonly transport: Transport;
     /** Optional receiver-side progress observer. */
     readonly onProgress?: TransferProgressHandler;
+    /** Optional presentation observer for valid lifecycle transitions. */
+    readonly onStateChange?: ReceiverStateHandler;
 }
 
 /**
@@ -41,6 +43,7 @@ export class ReceiverSession {
     readonly #sink: Sink;
     readonly #transport: Transport;
     readonly #onProgress: TransferProgressHandler | undefined;
+    readonly #onStateChange: ReceiverStateHandler | undefined;
     readonly #unsubscribeMessage: () => void;
     #state: ReceiverState = "idle";
     #senderPeerId: string | undefined;
@@ -57,6 +60,7 @@ export class ReceiverSession {
         this.#sink = options.sink;
         this.#transport = options.transport;
         this.#onProgress = options.onProgress;
+        this.#onStateChange = options.onStateChange;
         this.#unsubscribeMessage = this.#transport.onMessage(async (peerId, payload) => {
             await this.#receiveMessage(peerId, payload);
         });
@@ -188,12 +192,16 @@ export class ReceiverSession {
 
     /** Closes transport and destination resources. Repeated calls are safe. */
     close(): Promise<void> {
-        this.#closePromise ??= this.#performClose(true);
-        return this.#closePromise;
+        return this.#requestClose(true);
     }
 
     #transition(next: ReceiverState): void {
         this.#state = transitionReceiverState(this.#state, next);
+        try {
+            this.#onStateChange?.(this.#state);
+        } catch {
+            // Presentation observers cannot alter the session lifecycle.
+        }
     }
 
     async #receiveMessage(peerId: string, payload: unknown): Promise<void> {
@@ -270,7 +278,7 @@ export class ReceiverSession {
                     this.#sessionId === undefined ||
                     message.sessionId === this.#sessionId
                 ) {
-                    await this.#performClose(false);
+                    await this.#requestClose(false);
                 }
                 return;
             case "error":
@@ -388,6 +396,14 @@ export class ReceiverSession {
             this.#cancelledTransfer?.sessionId === sessionId &&
             this.#cancelledTransfer.fileId === fileId
         );
+    }
+
+    #requestClose(notifySender: boolean): Promise<void> {
+        // Local UI close and a peer cancellation can arrive in the same task turn.
+        // Whichever starts first owns the one cleanup operation and all callers
+        // observe that promise instead of racing a second terminal transition.
+        this.#closePromise ??= this.#performClose(notifySender);
+        return this.#closePromise;
     }
 
     async #performClose(notifySender: boolean): Promise<void> {

@@ -1017,6 +1017,16 @@ Preferred behaviour:
 
 If Obsidian APIs make atomic rename impractical across all platforms, choose the safest implementable strategy and document its limitations. Do not present a partial file as complete.
 
+For the minimum supported Obsidian 1.8.7 API, Barrow Alley buffers one incoming
+file in memory and creates no Vault entry until the receiver core has verified
+its byte count and SHA-256 digest. Completion then uses `Vault.createBinary`, or
+`Vault.modifyBinary` only after explicit overwrite confirmation. The destination
+is checked again immediately before that call so a file which appears or changes
+during transfer is not silently overwritten. A failed or cancelled transfer
+therefore leaves no partial Vault file, but the core and Vault adapter may retain
+complete in-memory representations of the active file. Transfers remain
+sequential, and the 100 MiB per-file limit bounds this mobile-relevant trade-off.
+
 ## 12.4 Fancy Kit Vault capability
 
 Do not expand Fancy Kit’s text/frontmatter Vault boundary merely to accommodate Barrow Alley binary writes. Keep binary transfer and destination policy owned by the Barrow Alley Obsidian adapter.

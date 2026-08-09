@@ -25,6 +25,9 @@ export type ReceiverState =
 /** Presentation observer for sender lifecycle changes after each valid transition. */
 export type SenderStateHandler = (state: SenderState) => void;
 
+/** Presentation observer for receiver lifecycle changes after each valid transition. */
+export type ReceiverStateHandler = (state: ReceiverState) => void;
+
 // These tables are the executable lifecycle policy. UI adapters may display the
 // state, but must not infer or bypass transitions with their own booleans.
 // In particular, `closed` has no outbound transition and is therefore terminal.

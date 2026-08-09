@@ -64,6 +64,42 @@ describe("in-memory sessions", () => {
         ]);
     });
 
+    it("reports receiver lifecycle changes without trusting the presentation observer", async () => {
+        const network = new InMemoryTransportNetwork();
+        const states: string[] = [];
+        const sender = new SenderSession({
+            sessionId: "session-1",
+            source: createFiles(),
+            transport: network.createEndpoint("sender"),
+        });
+        const receiver = new ReceiverSession({
+            clientKind: "browser",
+            sink: new InMemorySink(),
+            transport: network.createEndpoint("receiver"),
+            onStateChange(state) {
+                states.push(state);
+                if (state === "loading-manifest") {
+                    throw new Error("Presentation observers cannot interrupt the session.");
+                }
+            },
+        });
+
+        await sender.start();
+        await receiver.connect("sender");
+        await sender.accept();
+        await receiver.close();
+
+        expect(states).toEqual([
+            "connecting",
+            "awaiting-approval",
+            "loading-manifest",
+            "browsing",
+            "closing",
+            "closed",
+        ]);
+        expect(receiver.state).toBe("closed");
+    });
+
     it("discloses the manifest only after acceptance and retrieves one selected file", async () => {
         const network = new InMemoryTransportNetwork();
         const senderTransport = network.createEndpoint("sender");
@@ -259,6 +295,54 @@ describe("in-memory sessions", () => {
         await receiver.connect("sender");
         await Promise.all([sender.close(), sender.close()]);
         await Promise.all([receiver.close(), receiver.close()]);
+
+        expect(sender.state).toBe("closed");
+        expect(receiver.state).toBe("closed");
+        expect(network.endpoint("sender")).toBeUndefined();
+        expect(network.endpoint("receiver")).toBeUndefined();
+    });
+
+    it("serialises simultaneous local and peer-requested sender close operations", async () => {
+        const network = new InMemoryTransportNetwork();
+        const sender = new SenderSession({
+            sessionId: "session-close-race",
+            source: createFiles(),
+            transport: network.createEndpoint("sender"),
+        });
+        const receiver = new ReceiverSession({
+            clientKind: "obsidian",
+            sink: new InMemorySink(),
+            transport: network.createEndpoint("receiver"),
+        });
+        await sender.start();
+        await receiver.connect("sender");
+        await sender.accept();
+
+        await Promise.all([receiver.close(), sender.close()]);
+
+        expect(sender.state).toBe("closed");
+        expect(receiver.state).toBe("closed");
+        expect(network.endpoint("sender")).toBeUndefined();
+        expect(network.endpoint("receiver")).toBeUndefined();
+    });
+
+    it("serialises simultaneous local and peer-requested receiver close operations", async () => {
+        const network = new InMemoryTransportNetwork();
+        const sender = new SenderSession({
+            sessionId: "session-receiver-close-race",
+            source: createFiles(),
+            transport: network.createEndpoint("sender"),
+        });
+        const receiver = new ReceiverSession({
+            clientKind: "obsidian",
+            sink: new InMemorySink(),
+            transport: network.createEndpoint("receiver"),
+        });
+        await sender.start();
+        await receiver.connect("sender");
+        await sender.accept();
+
+        await Promise.all([sender.close(), receiver.close()]);
 
         expect(sender.state).toBe("closed");
         expect(receiver.state).toBe("closed");

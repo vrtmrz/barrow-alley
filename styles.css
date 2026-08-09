@@ -66,6 +66,10 @@
     margin-top: 1rem;
 }
 
+.barrow-alley-pitch__footer > button[hidden] {
+    display: none;
+}
+
 .barrow-alley-file-picker__search {
     width: 100%;
     margin-bottom: 0.75rem;
@@ -84,4 +88,35 @@
     gap: 0.5rem;
     align-items: baseline;
     padding: 0.4rem 0.25rem;
+}
+
+.barrow-alley-receiver__files {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.barrow-alley-receiver__file {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.barrow-alley-receiver__file > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.barrow-alley-receiver__file strong {
+    overflow-wrap: anywhere;
+}
+
+.barrow-alley-receiver__file span {
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
 }
