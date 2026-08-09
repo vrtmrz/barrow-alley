@@ -3,6 +3,7 @@ import {
   formatPitchNumber,
   generatePitchNumber,
 } from "../core/pitch-number.js";
+import { compatGlobal } from "../compat-global.js";
 import type { RelaySettings } from "../core/settings.js";
 import { SenderSession } from "../core/session/sender-session.js";
 import type { SenderState } from "../core/session/state.js";
@@ -220,7 +221,7 @@ function requireSession(session: SenderSession | undefined): SenderSession {
 }
 
 function createSessionId(): string {
-  return globalThis.crypto.randomUUID();
+  return compatGlobal.crypto.randomUUID();
 }
 
 function controllerShutDownError(): Error {

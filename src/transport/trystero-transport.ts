@@ -4,6 +4,7 @@ import {
   selfId,
 } from "@trystero-p2p/nostr";
 
+import { compatGlobal } from "../compat-global.js";
 import type { MessageHandler, Transport } from "./transport.js";
 import { parseRelayUrls, RelaySettingsError } from "./relay-settings.js";
 import {
@@ -304,7 +305,7 @@ export class TrysteroTransport implements PeerAwareTransport {
               ),
             );
           };
-      const timer = setTimeout(() => {
+      const timer = compatGlobal.setTimeout(() => {
         this.#removePeerWaiter(waiter);
         reject(
           new ConnectionError(
@@ -365,7 +366,7 @@ export class TrysteroTransport implements PeerAwareTransport {
 
   #removePeerWaiter(waiter: PeerWaiter): void {
     if (!this.#peerWaiters.delete(waiter)) return;
-    clearTimeout(waiter.timer);
+    compatGlobal.clearTimeout(waiter.timer);
     if (waiter.abort !== undefined) {
       waiter.signal?.removeEventListener("abort", waiter.abort);
     }
@@ -453,7 +454,7 @@ function resolveRtcConstructor(
   options: TrysteroTransportOptions,
 ): typeof RTCPeerConnection | undefined {
   if (options.rtcDiagnostics === undefined) return options.rtcPolyfill;
-  const BasePeerConnection = options.rtcPolyfill ?? globalThis.RTCPeerConnection;
+  const BasePeerConnection = options.rtcPolyfill ?? compatGlobal.RTCPeerConnection;
   if (typeof BasePeerConnection !== "function") {
     throw new ConnectionError(
       "TRANSPORT_FAILED",
@@ -498,7 +499,7 @@ const defaultTrysteroRuntime: TrysteroRuntime = {
             return action.onMessage as TrysteroActionFacade["onMessage"];
           },
           set onMessage(handler) {
-            action.onMessage = handler as never;
+            action.onMessage = handler;
           },
         };
       },
@@ -518,7 +519,7 @@ const defaultTrysteroRuntime: TrysteroRuntime = {
       },
     };
   },
-  getRelaySockets,
+  getRelaySockets: readRelaySockets,
 };
 
 interface EncodedActionPayload {
@@ -596,6 +597,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function readRelaySockets(): Readonly<Record<string, RelaySocketFacade>> {
+  // Trystero 0.25.3 publishes this function as `any`; narrow the untyped
+  // upstream value immediately, then validate it before exposing our facade.
+  const readUntypedRelaySockets = getRelaySockets as unknown as () => unknown;
+  const relaySockets = readUntypedRelaySockets();
+  if (!isRecord(relaySockets)) return {};
+  return Object.fromEntries(
+    Object.entries(relaySockets).flatMap(([url, socket]) =>
+      isRecord(socket) && typeof socket.readyState === "number"
+        ? [[url, { readyState: socket.readyState }]]
+        : [],
+    ),
+  );
+}
+
 function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+  return new Promise((resolve) => compatGlobal.setTimeout(resolve, milliseconds));
 }

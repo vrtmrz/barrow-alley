@@ -1,4 +1,5 @@
 import { sha256Hex } from "./transfer/integrity.js";
+import { compatGlobal } from "../compat-global.js";
 
 const PITCH_NUMBER_LENGTH = 8;
 const UNBIASED_DECIMAL_BYTE_LIMIT = 250;
@@ -21,7 +22,7 @@ export class PitchNumberError extends Error {
 }
 
 const secureRandomBytes: RandomByteFiller = (target) => {
-  globalThis.crypto.getRandomValues(target);
+  compatGlobal.crypto.getRandomValues(target);
 };
 
 /**

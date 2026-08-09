@@ -136,8 +136,9 @@ export class ReceiverSession {
       this.#transition("failed");
       throw error;
     }
-    if (this.#peerError !== undefined) {
-      throw new SessionError("PEER_ERROR", `The sender rejected the request: ${this.#peerError}.`);
+    const peerError = this.peerError;
+    if (peerError !== undefined) {
+      throw new SessionError("PEER_ERROR", `The sender rejected the request: ${peerError}.`);
     }
   }
 
@@ -400,6 +401,12 @@ export class ReceiverSession {
     await this.#transport.close();
     this.#activeFileId = undefined;
     this.#transition("closed");
-    if (cleanupError !== undefined) throw cleanupError;
+    if (cleanupError !== undefined) {
+      throw cleanupError instanceof Error
+        ? cleanupError
+        : new Error("The receiver could not clean up its active transfer.", {
+            cause: cleanupError,
+          });
+    }
   }
 }

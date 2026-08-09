@@ -121,7 +121,7 @@ function requireCurrentVersion(value: unknown): number {
       `Protocol version ${String(value)} is incompatible.`,
     );
   }
-  return value as number;
+  return value;
 }
 
 /**

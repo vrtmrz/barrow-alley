@@ -22,7 +22,6 @@ export class BarrowAlleySettingsTab extends PluginSettingTab {
   override display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    new Setting(containerEl).setName("Barrow Alley").setHeading();
 
     let editRevision = 0;
     let relayEditor: HTMLTextAreaElement | undefined;

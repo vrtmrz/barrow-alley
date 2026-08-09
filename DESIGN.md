@@ -928,6 +928,14 @@ Must not import:
 
 Add a lint or dependency-boundary test to prevent accidental Obsidian imports from the browser app.
 
+## 10.5 Runtime global boundary
+
+Keep browser and Node.js global-object access behind `src/compat-global.ts`.
+This is the sole reviewed compatibility workaround for host-neutral core and
+transport code which runs both in Obsidian and in the Node.js interoperability
+tests. Other production modules must not add direct `globalThis` access or
+local lint suppressions.
+
 ---
 
 ## 11. Fancy Kit use
@@ -1069,16 +1077,26 @@ Example scripts:
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
+    "lint": "node --max-old-space-size=3072 ./node_modules/eslint/bin/eslint.js src",
     "test": "vitest run",
     "test:watch": "vitest",
     "web:dev": "vite --config test/web/vite.config.ts",
     "web:build": "vite build --config test/web/vite.config.ts",
-    "check": "npm run test && npm run build && npm run web:build"
+    "check": "npm run lint && npm run test && npm run build",
+    "check:web": "npm run web:build"
   }
 }
 ```
 
 The exact script names can follow repository conventions.
+
+Keep `build` as the production plug-in build because the Community Directory
+scanner uses the first recognised build script. Tests and Node-only tooling stay
+under the exact root names `test` and `scripts`, which the scanner excludes.
+Local lint targets production `src`; Vitest and the test TypeScript project
+validate `test` separately. Keep the browser build and check out of the plug-in
+gate; run `check:web` as a separate validation and CI step. The lint script
+must apply the repository's 3 GB V8 heap limit to ESLint itself.
 
 Build output for the web client should be separate from plugin release assets, for example `dist-web/`.
 
@@ -1444,7 +1462,7 @@ Deliver:
 
 Acceptance:
 
-- `npm run check` passes.
+- `npm run check` and the separate `npm run check:web` pass.
 - Release contains only plugin assets.
 - README clearly states TURN limitations.
 - README does not overstate PIN security.

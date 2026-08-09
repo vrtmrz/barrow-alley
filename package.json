@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "npm run typecheck:plugin && node esbuild.config.mjs production",
+    "lint": "node --max-old-space-size=3072 ./node_modules/eslint/bin/eslint.js src",
     "typecheck:plugin": "tsc --noEmit -p tsconfig.json",
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
@@ -16,7 +17,8 @@
     "web:dev": "vite --config test/web/vite.config.ts",
     "web:check": "svelte-check --tsconfig test/web/tsconfig.json",
     "web:build": "npm run web:check && vite build --config test/web/vite.config.ts",
-    "check": "npm run test && npm run typecheck:tests && npm run build && npm run web:build"
+    "check": "npm run lint && npm run test && npm run typecheck:tests && npm run build",
+    "check:web": "npm run web:build"
   },
   "keywords": [
     "obsidian",
@@ -32,13 +34,19 @@
     "@vrtmrz/ui-interactions": "0.1.2"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.4",
     "@sveltejs/vite-plugin-svelte": "7.2.0",
     "@types/node": "24.13.3",
     "esbuild": "0.28.1",
+    "eslint": "9.39.4",
+    "eslint-plugin-obsidianmd": "0.4.0",
+    "globals": "17.6.0",
+    "jiti": "2.7.0",
     "obsidian": "1.13.1",
     "svelte": "5.56.8",
     "svelte-check": "4.7.4",
     "typescript": "6.0.3",
+    "typescript-eslint": "8.59.2",
     "vite": "8.2.0",
     "vitest": "4.1.10",
     "werift": "0.24.3"

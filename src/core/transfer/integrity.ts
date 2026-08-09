@@ -1,10 +1,12 @@
+import { compatGlobal } from "../../compat-global.js";
+
 /** Calculates lower-case SHA-256 hex over one complete byte array using Web Crypto. */
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const input =
     bytes.buffer instanceof ArrayBuffer
       ? new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength)
       : Uint8Array.from(bytes);
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", input);
+  const digest = await compatGlobal.crypto.subtle.digest("SHA-256", input);
   return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
 }
 
