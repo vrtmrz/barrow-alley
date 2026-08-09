@@ -1,0 +1,34 @@
+name: Prepare plug-in release
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    prepare:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        env:
+            NODE_OPTIONS: --max-old-space-size=3072
+        steps:
+            - uses: actions/checkout@v6
+            - name: Use Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: npm
+            - run: npm ci
+            - name: Check and prepare plug-in assets
+              id: release
+              run: npm run prepare:release
+            - name: Upload plug-in assets
+              uses: actions/upload-artifact@v4
+              with:
+                  name: barrow-alley-${{ steps.release.outputs.version }}
+                  if-no-files-found: error
+                  path: |
+                      build/release/main.js
+                      build/release/manifest.json
+                      build/release/styles.css

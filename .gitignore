@@ -2,6 +2,7 @@ node_modules/
 main.js
 main.js.map
 dist-web/
+/build/
 coverage/
 .DS_Store
 *.log

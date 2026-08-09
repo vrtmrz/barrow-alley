@@ -14,6 +14,7 @@
         "test:watch": "vitest",
         "test:boundaries": "vitest run test/unit/dependency-boundaries.test.ts",
         "test:e2e:trystero-local": "node test/e2e/trystero-local.mjs",
+        "prepare:release": "npm run check && node scripts/prepare-plugin-release.mjs",
         "web:dev": "vite --config test/web/vite.config.ts",
         "web:check": "svelte-check --tsconfig test/web/tsconfig.json",
         "web:build": "npm run web:check && vite build --config test/web/vite.config.ts",

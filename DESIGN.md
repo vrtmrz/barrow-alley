@@ -96,7 +96,6 @@ The initial release supports:
 
 Do not implement these unless the maintainer explicitly changes the scope:
 
-- QR codes.
 - A separate long random token.
 - URL-fragment secrets.
 - A second “strong link” connection path.
@@ -1298,11 +1297,8 @@ loopback host.
 Maintain a concise manual matrix:
 
 - Chrome ↔ Chrome.
-- Safari ↔ Chrome.
-- Firefox ↔ Chrome where supported.
-- iPhone Safari ↔ desktop browser.
-- Obsidian desktop ↔ browser.
-- Obsidian mobile ↔ browser.
+- Obsidian desktop ↔ Chrome.
+- Obsidian mobile ↔ Chrome.
 - Obsidian ↔ Obsidian.
 - Same LAN.
 - Different networks.
@@ -1315,7 +1311,7 @@ Maintain a concise manual matrix:
 - Zero-byte file.
 - Moderately large binary file.
 
-Do not promise very large-file support before measuring memory use on Obsidian mobile and iOS Safari.
+Do not promise very large-file support before measuring memory use in supported Obsidian and Chrome clients.
 
 ---
 
@@ -1476,7 +1472,7 @@ Acceptance:
 - Release contains only plugin assets.
 - README clearly states TURN limitations.
 - README does not overstate PIN security.
-- No QR code or long-token path exists.
+- The implemented connection path uses the eight-digit Pitch number and sender approval.
 - Relay configuration is documented.
 
 ---
@@ -1496,7 +1492,7 @@ The initial release is done when:
 - Nostr relay URLs can be edited in the Obsidian settings and browser client.
 - Sender and receiver need at least one usable relay in common.
 - Direct-connect failure is reported clearly.
-- No server-side file storage, QR code, separate random token, TURN service, account, pairing, or transfer history exists.
+- No server-side file storage, TURN service, account, pairing, or transfer history exists.
 - The repository is shaped as a normal Obsidian plugin.
 - `test/web` functions as a real interoperability client without becoming a separate package workspace.
 - Plugin release assets do not contain the browser application.
