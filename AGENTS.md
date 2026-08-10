@@ -16,5 +16,5 @@
 - Add behavioural regression coverage before fixing a defect. Confirm that the new test fails for the expected reason before changing production code.
 - Write repository documentation and user-facing text in British English, with Oxford commas and logical punctuation.
 - Respond to the user in the same language that they use. When the user requests a specific conversation language, continue in that language until they change it.
-- Do not add networking, Trystero, protocol messages, file transfer, QR codes, TURN, accounts, pairing, history, or synchronisation before the corresponding milestone is explicitly assigned.
+- Do not add networking, Trystero, protocol messages, file transfer, TURN, accounts, pairing, history, or synchronisation before the corresponding milestone is explicitly assigned.
 - Do not commit, push, publish, tag, or open or merge a pull request without explicit approval for that individual operation.

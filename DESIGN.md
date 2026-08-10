@@ -1471,7 +1471,7 @@ Acceptance:
 - `npm run check` and the separate `npm run check:web` pass.
 - Release contains only plugin assets.
 - README clearly states TURN limitations.
-- README does not overstate PIN security.
+- README does not overstate Pitch number security.
 - The implemented connection path uses the eight-digit Pitch number and sender approval.
 - Relay configuration is documented.
 
