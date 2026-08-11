@@ -21,7 +21,7 @@ Barrow Alley reads and checks the selected files, then displays the temporary Pi
 
 ## Receive files in Obsidian
 
-Run **Barrow Alley: Receive files**, enter the Pitch number, and choose a destination folder. After the sender accepts the request, choose files from the disclosed list.
+Run **Barrow Alley: Receive files**, enter the Pitch number with the on-screen keypad, and choose a destination folder. After the sender accepts the request, choose files from the disclosed list. Once the connection dialogue is open, it remains open if discovery or direct connection fails so that you can review the status and try another number.
 
 When a destination name already exists, Barrow Alley offers to save with another name, overwrite, skip, or cancel. It does not overwrite a Vault file without an explicit choice. The received size and SHA-256 digest are checked before a complete file is saved.
 

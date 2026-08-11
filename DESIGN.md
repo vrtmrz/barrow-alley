@@ -213,11 +213,12 @@ A short burst of repeated denied requests may trigger an informative warning, bu
 ## 4.2 Receiver flow
 
 1. The receiver chooses **Receive files**.
-2. The receiver enters an eight-digit Pitch number.
+2. The receiver enters an eight-digit Pitch number with the on-screen keypad.
 3. Barrow Alley validates the format locally.
 4. The receiver joins the corresponding room.
 5. The UI says that sender approval is pending.
-6. If denied, the UI reports denial and returns to number entry.
+6. If denied, or if connection fails, the UI reports the outcome and remains
+   open with an action to return to number entry.
 7. If accepted, the receiver obtains the manifest.
 8. The UI lists the available files.
 9. The receiver selects a file to retrieve.
@@ -227,9 +228,14 @@ A short burst of repeated denied requests may trigger an informative warning, bu
 Suggested copy:
 
 ```text
-Enter a Pitch number
+Pitch number
 
-[ 1234 5678 ]
+[ ____ ____ ]
+
+[1] [2] [3]
+[4] [5] [6]
+[7] [8] [9]
+[Clear] [0] [Delete]
 
 [Request access]
 ```

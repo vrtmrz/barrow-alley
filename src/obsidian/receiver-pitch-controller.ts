@@ -68,6 +68,10 @@ export interface ReceiverPitchControllerOptions {
 }
 
 interface ActiveReceiver {
+    /**
+     * The session may already be closed when a failed attempt remains visible.
+     * Keeping the pair active preserves ownership of the retryable view.
+     */
     readonly session: ReceiverSession;
     readonly view: ReceiverPitchView;
 }
@@ -225,7 +229,17 @@ export class ReceiverPitchController {
             await session.connect(senderPeerId);
             return pitchNumber;
         } catch (error) {
-            await this.#performClose(session, true);
+            if (this.#shutDown) {
+                await this.#performClose(session, true);
+            } else {
+                // Discovery and admission failures must release the transport,
+                // but the visible attempt remains useful: it explains the
+                // failure and provides the route back to number entry.
+                await session.close();
+                if (this.#active?.session === session) {
+                    view.setState("failed");
+                }
+            }
             throw error;
         }
     }

@@ -11,6 +11,7 @@ import { registerSenderCommands } from "./sender-commands.js";
 import { registerReceiverCommands } from "./receiver-commands.js";
 import { ReceiverPitchController } from "./receiver-pitch-controller.js";
 import { BarrowAlleyReceiverPitchModal } from "./receiver-pitch-modal.js";
+import { promptPitchNumberWithKeypad } from "./pitch-number-modal.js";
 import { SenderPitchController } from "./sender-pitch-controller.js";
 import { BarrowAlleySenderPitchModal } from "./sender-pitch-modal.js";
 import { ObsidianRelaySettingsStore } from "./settings.js";
@@ -170,27 +171,8 @@ export class BarrowAlleyPlugin extends Plugin {
     }
 
     async #promptPitchNumber(): Promise<string | null> {
-        let initialValue = "";
-        while (true) {
-            const input = await promptText(this.app, {
-                title: "Enter a Pitch number",
-                label: "Pitch number",
-                description: "Ask the sender for the eight-digit number shown by Barrow Alley.",
-                placeholder: "1234 5678",
-                initialValue,
-                submitLabel: "Request access",
-                cancelLabel: "Cancel",
-            });
-            if (input === null) return null;
-            try {
-                return validatePitchNumber(input);
-            } catch (error) {
-                initialValue = input;
-                new Notice(
-                    error instanceof Error ? error.message : "Enter an eight-digit number.",
-                );
-            }
-        }
+        const input = await promptPitchNumberWithKeypad(this.app);
+        return input === null ? null : validatePitchNumber(input);
     }
 
     async #pickDestinationFolder(): Promise<TFolder | null> {

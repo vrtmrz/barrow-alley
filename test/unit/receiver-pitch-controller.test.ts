@@ -60,6 +60,21 @@ class DiscoverableTransport implements PeerAwareTransport {
     }
 }
 
+class FailingDiscoverableTransport extends DiscoverableTransport {
+    readonly #failure: Error;
+
+    constructor(transport: Transport, failure: Error) {
+        super(transport, "unreachable-sender");
+        this.#failure = failure;
+    }
+
+    override async waitForPeer(
+        _options?: WaitForPeerOptions,
+    ): Promise<string> {
+        throw this.#failure;
+    }
+}
+
 class RecordingView implements ReceiverPitchView {
     readonly model: ReceiverPitchViewModel;
     readonly actions: ReceiverPitchViewActions;
@@ -260,6 +275,47 @@ describe("ReceiverPitchController", () => {
 
         expect(view?.closed).toBe(true);
         expect(view?.states.at(-1)).toBe("closed");
+        expect(retryRequests).toBe(1);
+        expect(controller.hasActiveReceiver).toBe(false);
+    });
+
+    it("keeps a failed connection attempt open so another number can be tried", async () => {
+        const network = new InMemoryTransportNetwork();
+        const failure = new Error("No sender joined this pitch.");
+        let view: RecordingView | undefined;
+        let retryRequests = 0;
+        const controller = new ReceiverPitchController({
+            createTransport: async () =>
+                new FailingDiscoverableTransport(
+                    network.createEndpoint("receiver"),
+                    failure,
+                ),
+            createView(model, actions) {
+                view = new RecordingView(model, actions);
+                return view;
+            },
+            onRetryRequested: () => {
+                retryRequests += 1;
+            },
+        });
+        const destination: ReceiverDestination = {
+            sink: new InMemorySink(),
+            prepare: async () => true,
+        };
+
+        await expect(
+            controller.receivePitch("12345678", destination, "Vault root", {
+                relays: ["wss://relay.example"],
+            }),
+        ).rejects.toBe(failure);
+
+        expect(view?.opened).toBe(true);
+        expect(view?.closed).toBe(false);
+        expect(view?.states.at(-1)).toBe("failed");
+        expect(controller.hasActiveReceiver).toBe(true);
+
+        await view?.actions.onRetry();
+        expect(view?.closed).toBe(true);
         expect(retryRequests).toBe(1);
         expect(controller.hasActiveReceiver).toBe(false);
     });
