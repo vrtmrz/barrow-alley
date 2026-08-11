@@ -1,6 +1,6 @@
 {
     "name": "barrow-alley",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Temporarily present selected files to one sender-approved receiver.",
     "main": "main.js",
     "type": "module",

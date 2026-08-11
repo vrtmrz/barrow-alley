@@ -1,7 +1,7 @@
 {
     "id": "barrow-alley",
     "name": "Barrow Alley",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "minAppVersion": "1.8.7",
     "description": "Temporarily present selected files to one sender-approved receiver.",
     "author": "vorotamoroz",
