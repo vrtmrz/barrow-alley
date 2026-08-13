@@ -1,9 +1,7 @@
 :root {
-    color: #28231d;
-    background:
-        radial-gradient(circle at top left, rgb(176 110 49 / 12%), transparent 28rem),
-        #eee7da;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1e293b;
+    background: #f8fafc;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
 }
@@ -29,7 +27,7 @@ input:focus-visible,
 textarea:focus-visible,
 summary:focus-visible,
 .drop-zone:focus-within {
-    outline: 3px solid rgb(102 69 28 / 30%);
+    outline: 2px solid #94a3b8;
     outline-offset: 2px;
 }
 
@@ -46,10 +44,10 @@ main {
 
 .eyebrow {
     margin: 0 0 0.65rem;
-    color: #71522c;
+    color: #64748b;
     font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.13em;
+    font-weight: 700;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
 }
 
@@ -62,15 +60,16 @@ p {
 
 h1,
 h2 {
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 500;
+    font-family: inherit;
+    font-weight: 600;
+    color: #0f172a;
 }
 
 h1 {
     margin: 0;
-    font-size: clamp(3.4rem, 10vw, 7rem);
-    letter-spacing: -0.055em;
-    line-height: 0.9;
+    font-size: clamp(3rem, 9vw, 6rem);
+    letter-spacing: -0.04em;
+    line-height: 1.1;
 }
 
 h2,
@@ -90,8 +89,8 @@ h3 {
 
 .tagline {
     margin: 1.25rem 0 0;
-    color: #4f473d;
-    font-family: Georgia, "Times New Roman", serif;
+    color: #475569;
+    font-family: inherit;
     font-size: clamp(1.15rem, 3vw, 1.55rem);
     line-height: 1.5;
 }
@@ -109,10 +108,10 @@ h3 {
 .panel,
 .session-panel,
 .settings {
-    border: 1px solid #c9bda9;
-    border-radius: 1.15rem;
-    background: rgb(255 251 242 / 92%);
-    box-shadow: 0 1rem 3rem rgb(74 51 24 / 8%);
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 }
 
 .panel,
@@ -131,7 +130,7 @@ h3 {
 .session-header p,
 .settings p {
     margin: 0.25rem 0;
-    color: #635b50;
+    color: #64748b;
     line-height: 1.55;
 }
 
@@ -141,9 +140,9 @@ h3 {
     width: 2rem;
     height: 2rem;
     border-radius: 50%;
-    background: #31291f;
-    color: #fffaf1;
-    font-weight: 800;
+    background: #1e293b;
+    color: #f8fafc;
+    font-weight: 700;
     place-items: center;
 }
 
@@ -151,20 +150,20 @@ h3 {
     display: grid;
     min-height: 9rem;
     padding: 1.25rem;
-    border: 2px dashed #a28d70;
-    border-radius: 0.85rem;
-    background: #f7f0e3;
-    color: #5e554a;
+    border: 2px dashed #cbd5e1;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    color: #475569;
     cursor: pointer;
     text-align: center;
-    transition: 120ms ease;
+    transition: 150ms ease;
     place-content: center;
 }
 
 .drop-zone:hover,
 .drop-zone.dragging {
-    border-color: #755027;
-    background: #f1e1ca;
+    border-color: #94a3b8;
+    background: #f1f5f9;
 }
 
 .drop-zone input {
@@ -177,9 +176,9 @@ h3 {
 }
 
 .drop-title {
-    color: #342a20;
-    font-size: 1.08rem;
-    font-weight: 800;
+    color: #1e293b;
+    font-size: 1.05rem;
+    font-weight: 600;
 }
 
 .selected-files {
@@ -190,17 +189,18 @@ h3 {
 .settings label {
     display: block;
     margin-bottom: 0.45rem;
-    font-weight: 800;
+    font-weight: 600;
+    color: #334155;
 }
 
 .pitch-input,
 .settings textarea {
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid #a99c89;
-    border-radius: 0.6rem;
-    background: #fff;
-    color: #28231d;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    color: #1e293b;
 }
 
 .pitch-input {
@@ -213,7 +213,7 @@ h3 {
 .field-help,
 .quiet,
 .empty-list {
-    color: #665e54;
+    color: #64748b;
     font-size: 0.92rem;
     line-height: 1.5;
 }
@@ -228,28 +228,29 @@ h3 {
 .small-button {
     padding: 0.65rem 1rem;
     border: 1px solid transparent;
-    border-radius: 999px;
+    border-radius: 0.5rem;
     cursor: pointer;
-    font-weight: 800;
+    font-weight: 600;
+    transition: 150ms ease;
 }
 
 .primary,
 .small-button {
-    border-color: #67451f;
-    background: #67451f;
-    color: #fff;
+    border-color: #334155;
+    background: #334155;
+    color: #ffffff;
 }
 
 .secondary {
-    border-color: #766753;
-    background: transparent;
-    color: #4f402f;
+    border-color: #cbd5e1;
+    background: #ffffff;
+    color: #475569;
 }
 
 .danger {
-    border-color: #8d3430;
-    background: #8d3430;
-    color: #fff;
+    border-color: #ef4444;
+    background: #ef4444;
+    color: #ffffff;
 }
 
 .primary:hover:not(:disabled),
@@ -279,11 +280,16 @@ button:disabled {
     padding: 0.4rem 0;
     border: 0;
     background: transparent;
-    color: #724a1e;
+    color: #475569;
     cursor: pointer;
-    font-weight: 800;
+    font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 0.2em;
+    transition: color 150ms ease;
+}
+
+.text-button:hover {
+    color: #1e293b;
 }
 
 .cancel-start {
@@ -292,11 +298,11 @@ button:disabled {
 }
 
 .session-panel {
-    border-top: 0.45rem solid #755027;
+    border-top: 4px solid #475569;
 }
 
 .receiver-session {
-    border-top-color: #3f6657;
+    border-top-color: #64748b;
 }
 
 .session-header {
@@ -308,7 +314,7 @@ button:disabled {
 
 .pitch-number {
     margin: clamp(1.5rem, 4vw, 2.5rem) 0 1rem;
-    color: #241c14;
+    color: #0f172a;
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     font-size: clamp(2.8rem, 11vw, 6.5rem);
     font-weight: 700;
@@ -319,9 +325,11 @@ button:disabled {
 .status-line {
     margin: 0 0 1.5rem;
     padding: 0.9rem 1rem;
-    border-left: 0.3rem solid #826039;
-    background: #f4eadb;
-    font-weight: 750;
+    border-left: 4px solid #64748b;
+    background: #f1f5f9;
+    font-weight: 600;
+    border-radius: 0 0.5rem 0.5rem 0;
+    color: #334155;
 }
 
 .approval-box {
@@ -331,9 +339,9 @@ button:disabled {
     gap: 1rem;
     margin: 0 0 1.5rem;
     padding: 1rem;
-    border: 1px solid #c79554;
-    border-radius: 0.75rem;
-    background: #fff1d7;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    background: #f8fafc;
 }
 
 .approval-box h3,
@@ -359,11 +367,11 @@ button:disabled {
     gap: 0.8rem;
     min-height: 2.75rem;
     padding: 0.55rem 0;
-    border-bottom: 1px solid #ddd2c1;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .file-list li:first-child {
-    border-top: 1px solid #ddd2c1;
+    border-top: 1px solid #e2e8f0;
 }
 
 .file-list.compact {
@@ -374,7 +382,7 @@ button:disabled {
 .file-size {
     display: block;
     flex: 0 0 auto;
-    color: #6b6257;
+    color: #64748b;
     font-size: 0.84rem;
 }
 
@@ -395,9 +403,9 @@ button:disabled {
 .progress-card,
 .diagnostic-card {
     padding: 1rem;
-    border: 1px solid #cfc2b0;
-    border-radius: 0.75rem;
-    background: #f8f3e9;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: #f8fafc;
 }
 
 .progress-card p,
@@ -408,52 +416,54 @@ button:disabled {
 .progress-card progress {
     width: 100%;
     height: 0.75rem;
-    accent-color: #446b57;
+    accent-color: #475569;
 }
 
 .diagnostic-card.failure {
-    border-color: #c87570;
-    background: #fff0ee;
+    border-color: #fca5a5;
+    background: #fef2f2;
 }
 
 .diagnostic-totals {
-    color: #6a6258;
+    color: #64748b;
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     font-size: 0.78rem;
 }
 
 .success-copy,
 .feedback:not(.error) {
-    color: #386048;
-    font-weight: 800;
+    color: #059669;
+    font-weight: 600;
 }
 
 .notice {
     margin-bottom: 1rem;
     padding: 0.85rem 1rem;
-    border-radius: 0.65rem;
+    border-radius: 0.5rem;
 }
 
 .error-notice {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
-    border: 1px solid #c87570;
-    background: #fff0ee;
-    color: #762d2a;
+    border: 1px solid #fca5a5;
+    background: #fef2f2;
+    color: #991b1b;
 }
 
 .security-note {
     margin: 1.25rem 0;
     padding: 0.85rem 1rem;
-    border-left: 0.3rem solid #705f49;
-    color: #5d554b;
+    border-left: 4px solid #94a3b8;
+    background: #f1f5f9;
+    color: #475569;
     font-size: 0.9rem;
     line-height: 1.55;
+    border-radius: 0 0.5rem 0.5rem 0;
 }
 
 .security-note strong {
-    color: #332b22;
+    color: #1e293b;
 }
 
 .settings {
@@ -463,7 +473,7 @@ button:disabled {
 .settings summary {
     padding: 1rem 1.25rem;
     cursor: pointer;
-    font-weight: 800;
+    font-weight: 600;
 }
 
 .settings-body {
@@ -487,11 +497,11 @@ button:disabled {
 }
 
 .feedback {
-    font-weight: 800;
+    font-weight: 600;
 }
 
 .feedback.error {
-    color: #8d3430;
+    color: #dc2626;
 }
 
 @media (max-width: 48rem) {
