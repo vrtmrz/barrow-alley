@@ -1,10 +1,11 @@
 # Barrow Alley
 
-> **Rather than tap the right brick, install Barrow Alley.**
-
 > **Set up a pitch. Share the number. Let them choose.**
 
 Barrow Alley is an Obsidian plug-in for temporary, sender-approved file handoff. A sender selects files and shares an eight-digit Pitch number. The sender must then accept the visitor before any file details are disclosed. The accepted visitor chooses which files to receive.
+
+> [!TIP]
+> Incidentally, Barrow Alley and [Screwdriver](https://github.com/vrtmrz/obsidian-screwdriver) make a handy, rough-and-ready way to test an Obsidian plug-in under development: pack its build into a note with Screwdriver, hand that note over with Barrow Alley, then restore it in a test Vault.
 
 Barrow Alley requires Obsidian 1.8.7 or later.
 
@@ -27,9 +28,9 @@ When a destination name already exists, Barrow Alley offers to save with another
 
 ## Browser client
 
-This repository contains a small browser interoperability client under `test/web`. It can set up or visit a pitch and is built separately from the Obsidian plug-in. The current version of Chrome is recommended.
+To send files from this device to an Obsidian Vault—or receive files here from a Vault—[open Barrow Alley for the web](https://vrtmrz.github.io/barrow-alley/). The current version of Chrome is recommended.
 
-The browser client is not currently deployed by this repository.
+This repository contains the browser client under `test/web`. It also serves as a small interoperability harness and is built separately from the Obsidian plug-in.
 
 ## Network and relay settings
 
