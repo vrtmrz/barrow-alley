@@ -6,12 +6,20 @@ export type ReceiveFilesHandler = () => void | Promise<void>;
 export function registerReceiverCommands(
     plugin: Plugin,
     receiveFiles: ReceiveFilesHandler,
+    receiveFilesIntoFolder: ReceiveFilesHandler,
 ): void {
     plugin.addCommand({
         id: "receive-files",
         name: "Receive files",
         callback() {
             void receiveFiles();
+        },
+    });
+    plugin.addCommand({
+        id: "receive-files-into-folder",
+        name: "Receive files into a folder",
+        callback() {
+            void receiveFilesIntoFolder();
         },
     });
 }

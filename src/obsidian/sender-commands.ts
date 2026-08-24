@@ -1,11 +1,17 @@
 import { type Plugin, TFile } from "obsidian";
 
 import { selectVaultFiles } from "./file-selection-modal.js";
+import { promptTextForPitch } from "./text-input-modal.js";
 
 export type SetUpPitchHandler = (files: readonly TFile[]) => void | Promise<void>;
+export type SetUpTextPitchHandler = (text: string) => void | Promise<void>;
 
 /** Registers only the Obsidian sender entry points assigned to Milestone 4. */
-export function registerSenderCommands(plugin: Plugin, setUpPitch: SetUpPitchHandler): void {
+export function registerSenderCommands(
+    plugin: Plugin,
+    setUpPitch: SetUpPitchHandler,
+    setUpTextPitch: SetUpTextPitchHandler,
+): void {
     plugin.addCommand({
         id: "set-up-pitch-current-file",
         name: "Set up a pitch for current file",
@@ -29,6 +35,15 @@ export function registerSenderCommands(plugin: Plugin, setUpPitch: SetUpPitchHan
                 });
             }
             return true;
+        },
+    });
+
+    plugin.addCommand({
+        id: "set-up-pitch-text",
+        name: "Set up a pitch for text",
+        callback: async () => {
+            const text = await promptTextForPitch(plugin.app);
+            if (text !== null) await setUpTextPitch(text);
         },
     });
 

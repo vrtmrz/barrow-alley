@@ -103,6 +103,7 @@ export class ReceiverPitchController {
         destination: ReceiverDestination,
         destinationLabel: string,
         relaySettings: RelaySettings,
+        onRetryRequested?: () => void | Promise<void>,
     ): Promise<string> {
         if (this.#shutDown) return Promise.reject(controllerShutDownError());
         return this.#enqueue(async () =>
@@ -111,6 +112,7 @@ export class ReceiverPitchController {
                 destination,
                 destinationLabel,
                 relaySettings,
+                onRetryRequested,
             )
         );
     }
@@ -131,6 +133,7 @@ export class ReceiverPitchController {
         destination: ReceiverDestination,
         destinationLabel: string,
         relaySettings: RelaySettings,
+        onRetryRequested: (() => void | Promise<void>) | undefined,
     ): Promise<string> {
         this.#assertRunning();
         await this.#performCloseActive(true);
@@ -180,7 +183,7 @@ export class ReceiverPitchController {
                 onRetry: async () => {
                     const current = requireSession(session);
                     await this.#enqueue(async () => this.#performClose(current, true));
-                    await this.#options.onRetryRequested?.();
+                    await (onRetryRequested ?? this.#options.onRetryRequested)?.();
                 },
                 onClose: async () => {
                     const current = requireSession(session);

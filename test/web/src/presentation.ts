@@ -86,6 +86,7 @@ export function browserErrorMessage(error: unknown): string {
             case "PitchNumberError":
             case "RelaySettingsError":
             case "BrowserFileSourceError":
+            case "TextSourceError":
             case "BrowserDownloadSinkError":
             case "ConnectionError":
                 return error.message;

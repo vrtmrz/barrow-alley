@@ -10,6 +10,12 @@ export {
     validatePitchNumber,
 } from "./pitch-number.js";
 export type { RelaySettings } from "./settings.js";
+export {
+    formatSharedTextFileName,
+    TextSource,
+    TextSourceError,
+    type TextSourceErrorCode,
+} from "./text-source.js";
 export { ProtocolValidationError } from "./protocol/errors.js";
 export type {
     AcceptMessage,

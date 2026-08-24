@@ -118,6 +118,19 @@
     margin-bottom: 0.75rem;
 }
 
+.barrow-alley-text-entry__input {
+    width: 100%;
+    min-height: 12rem;
+    resize: vertical;
+}
+
+.barrow-alley-text-entry__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
 .barrow-alley-file-picker__results {
     display: flex;
     flex-direction: column;

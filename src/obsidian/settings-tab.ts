@@ -56,6 +56,41 @@ export class BarrowAlleySettingsTab extends PluginSettingTab {
             attr: { "aria-live": "polite" },
         });
 
+        const defaultReceiveFolderPath = this.#plugin.getDefaultReceiveFolderPath();
+        const receiveFolderPaths = this.#plugin.getReceiveFolderPaths();
+        new Setting(containerEl)
+            .setName("Default receive folder")
+            .setDesc(
+                "Use this vault folder for received files, or select a folder for each receive.",
+            )
+            .addDropdown((dropdown) => {
+                dropdown.addOption("", "Ask every time");
+                if (
+                    defaultReceiveFolderPath !== null &&
+                    !receiveFolderPaths.includes(defaultReceiveFolderPath)
+                ) {
+                    dropdown.addOption(
+                        defaultReceiveFolderPath,
+                        `${defaultReceiveFolderPath} (missing)`,
+                    );
+                }
+                for (const path of receiveFolderPaths) {
+                    dropdown.addOption(path, path === "/" ? "Vault root" : path);
+                }
+                dropdown.setValue(defaultReceiveFolderPath ?? "");
+                dropdown.onChange(async (value) => {
+                    try {
+                        await this.#plugin.setDefaultReceiveFolderPath(value === "" ? null : value);
+                        showFeedback(
+                            "Default receive folder saved. New receive attempts will use this setting.",
+                            false,
+                        );
+                    } catch (error) {
+                        showFeedback(toDestinationSettingsMessage(error), true);
+                    }
+                });
+            });
+
         new Setting(containerEl)
             .setName("Restore relay defaults")
             .setDesc("Replace the complete relay list with the defaults shipped by this version.")
@@ -88,4 +123,10 @@ export class BarrowAlleySettingsTab extends PluginSettingTab {
 function toSettingsMessage(error: unknown): string {
     if (error instanceof RelaySettingsError) return error.message;
     return "Barrow Alley could not save the relay settings.";
+}
+
+function toDestinationSettingsMessage(error: unknown): string {
+    return error instanceof Error
+        ? error.message
+        : "Barrow Alley could not save the default receive folder.";
 }

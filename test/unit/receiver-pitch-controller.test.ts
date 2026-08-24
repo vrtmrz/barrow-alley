@@ -319,4 +319,50 @@ describe("ReceiverPitchController", () => {
         expect(retryRequests).toBe(1);
         expect(controller.hasActiveReceiver).toBe(false);
     });
+
+    it("uses the retry destination callback belonging to the starting attempt", async () => {
+        const network = new InMemoryTransportNetwork();
+        const sender = new SenderSession({
+            sessionId: "session-retry-destination",
+            source: source(),
+            transport: network.createEndpoint("sender"),
+        });
+        await sender.start();
+        let view: RecordingView | undefined;
+        let defaultRetryRequests = 0;
+        let attemptRetryRequests = 0;
+        const controller = new ReceiverPitchController({
+            createTransport: async () =>
+                new DiscoverableTransport(
+                    network.createEndpoint("receiver"),
+                    "sender",
+                ),
+            createView(model, actions) {
+                view = new RecordingView(model, actions);
+                return view;
+            },
+            onRetryRequested: () => {
+                defaultRetryRequests += 1;
+            },
+        });
+        const destination: ReceiverDestination = {
+            sink: new InMemorySink(),
+            prepare: async () => true,
+        };
+
+        await controller.receivePitch(
+            "12345678",
+            destination,
+            "Incoming",
+            { relays: ["wss://relay.example"] },
+            () => {
+                attemptRetryRequests += 1;
+            },
+        );
+        await sender.deny();
+        await view?.actions.onRetry();
+
+        expect(attemptRetryRequests).toBe(1);
+        expect(defaultRetryRequests).toBe(0);
+    });
 });

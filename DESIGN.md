@@ -132,8 +132,10 @@ Initial commands should include:
 
 - `Barrow Alley: Set up a pitch for current file`
 - `Barrow Alley: Set up a pitch for selected files`
+- `Barrow Alley: Set up a pitch for text`
 - `Barrow Alley: Open Barrow Alley`
 - `Barrow Alley: Receive files`
+- `Barrow Alley: Receive files into a folder`
 
 Where practical, add file-menu actions for the current file and selected files.
 
@@ -150,7 +152,7 @@ Sending should require no account or setup beyond the relay defaults.
 
 ### Sender sequence
 
-1. The sender selects or drops files.
+1. The sender selects or drops files, or enters multiline text.
 2. Barrow Alley validates the selection.
 3. Barrow Alley creates a sender session.
 4. A cryptographically random Pitch number is generated.
@@ -355,6 +357,10 @@ export interface ManifestItem {
 Do not send an absolute filesystem path.
 
 Do not send a full Vault path unless a later feature explicitly requires directory preservation. If duplicate display names must be distinguished, create a safe display label without exposing unrelated parent paths.
+
+Entered text uses the ordinary file-transfer path through the protocol. It is encoded as
+UTF-8 `text/plain` with a sender-local timestamped name such as
+`shared-20260824-101234.txt`; do not add text-specific wire messages.
 
 ## 5.5 File mutation
 
@@ -989,7 +995,19 @@ Do not add generic components to Fancy Kit unless another real consumer exists o
 
 ## 12.1 Incoming destination
 
-The receiver must choose or have a configured destination folder.
+The receiver must choose or have a configured destination folder. Obsidian
+provides two receiver commands:
+
+- `receive-files` uses the configured default folder, or asks for a folder when
+  the default is unset.
+- `receive-files-into-folder` always asks for a folder.
+
+The configured default is persisted as a Vault-relative path. The Vault root is
+`/`, and an unset default is `null`. An explicit folder choice never changes the
+configured default. If a configured path no longer resolves to a Vault folder,
+Barrow Alley reports the missing destination and aborts the receive attempt; it
+does not silently use the Vault root. A retry keeps the command mode and
+destination selected when the attempt began.
 
 Initial policy may be:
 
@@ -1062,6 +1080,7 @@ Keep it deliberately small:
 Sender:
 
 - Drop or select files.
+- Enter or paste multiline text.
 - Display the Pitch number.
 - Accept or deny a receiver.
 - Show transfer status.
@@ -1408,6 +1427,7 @@ Acceptance:
 Deliver:
 
 - Commands for current and selected files.
+- A command which presents entered text as one timestamped plain-text file.
 - Vault-backed source adapter.
 - Sender pitch view/modal.
 - Number display.
@@ -1445,6 +1465,7 @@ Acceptance:
 Deliver:
 
 - Drop zone.
+- Multiline text entry using the same sender session and transfer path as files.
 - Number entry.
 - Sender approval UI.
 - Manifest list.

@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte";
 
+import { TextSource } from "../../../src/core/text-source.js";
 import type { TransferProgress } from "../../../src/core/transfer/progress.js";
 import {
     DEFAULT_RELAY_SETTINGS,
@@ -25,6 +26,8 @@ import {
 } from "./presentation.js";
 import { LocalStorageRelaySettingsStore } from "./relay-settings-store.js";
 
+const TEXT_SHARE_PLACEHOLDER = `Paste text to share, for example:
+foo_bar_token: pat_deafbeef`;
 const relayStore = new LocalStorageRelaySettingsStore(window.localStorage);
 const downloadTarget = new DomBrowserDownloadTarget(
     document,
@@ -35,6 +38,7 @@ const downloadSink = new BrowserDownloadSink(downloadTarget);
 
 let snapshot: BrowserPitchSnapshot = $state({ mode: "idle" });
 let selectedFiles: File[] = $state([]);
+let textToShare = $state("");
 let pitchInput = $state("");
 let relayText = $state(relayStore.loadText());
 let relayFeedback = $state("");
@@ -87,6 +91,20 @@ async function setUpPitch(): Promise<void> {
     try {
         const source = new BrowserFileSource(selectedFiles);
         await controller.setUpPitch(source, relayStore.load());
+    } catch (error) {
+        reportActionError(error);
+    } finally {
+        starting = false;
+    }
+}
+
+async function setUpTextPitch(): Promise<void> {
+    actionError = "";
+    starting = true;
+    try {
+        const source = new TextSource(textToShare);
+        await controller.setUpPitch(source, relayStore.load());
+        textToShare = "";
     } catch (error) {
         reportActionError(error);
     } finally {
@@ -200,7 +218,7 @@ function transferSummary(progress: TransferProgress): string {
                     <span class="step">1</span>
                     <div>
                         <h2 id="send-title">Set up a pitch</h2>
-                        <p>Select files, then share the temporary number.</p>
+                        <p>Select files or enter text, then share the temporary number.</p>
                     </div>
                 </div>
 
@@ -247,6 +265,28 @@ function transferSummary(progress: TransferProgress): string {
                 >
                     {starting ? "Preparing files…" : "Set up a pitch"}
                 </button>
+
+                <div class="text-share">
+                    <h3>Or enter text</h3>
+                    <p class="field-help">
+                        Enter or paste text to share it as one plain-text file.
+                    </p>
+                    <label class="field-label" for="text-to-share">Text to share</label>
+                    <textarea
+                        id="text-to-share"
+                        rows="6"
+                        placeholder={TEXT_SHARE_PLACEHOLDER}
+                        bind:value={textToShare}
+                    ></textarea>
+                    <button
+                        class="secondary full-width"
+                        type="button"
+                        disabled={textToShare.length === 0 || starting}
+                        onclick={setUpTextPitch}
+                    >
+                        {starting ? "Preparing text…" : "Set up a pitch"}
+                    </button>
+                </div>
             </section>
 
             <section class="panel" aria-labelledby="receive-title">

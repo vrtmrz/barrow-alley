@@ -15,20 +15,23 @@ Use one of the following Obsidian commands or File Explorer actions:
 
 - **Barrow Alley: Set up a pitch for current file**
 - **Barrow Alley: Set up a pitch for selected files**
+- **Barrow Alley: Set up a pitch for text**
 - **Set up a pitch for this file** from a file menu
 - **Set up a pitch for selected files** from a multiple-file menu
 
-Barrow Alley reads and checks the selected files, then displays the temporary Pitch number. Keep the pitch open while the visitor connects. Choose **Accept** to disclose the file list to that visitor, or **Deny** to refuse the request. **Close the pitch** ends the session.
+Barrow Alley reads and checks selected files. The text command accepts multiline text and presents it as a timestamped file such as `shared-20260824-101234.txt`. After preparing the pitch, Barrow Alley displays the temporary Pitch number. Keep the pitch open while the visitor connects. Choose **Accept** to disclose the file list to that visitor, or **Deny** to refuse the request. **Close the pitch** ends the session.
 
 ## Receive files in Obsidian
 
-Run **Barrow Alley: Receive files**, enter the Pitch number with the on-screen keypad, and choose a destination folder. After the sender accepts the request, choose files from the disclosed list. Once the connection dialogue is open, it remains open if discovery or direct connection fails so that you can review the status and try another number.
+Run **Barrow Alley: Receive files** and enter the Pitch number with the on-screen keypad. When a default receive folder is configured in Barrow Alley settings, this command uses it; otherwise, it asks you to choose a folder. **Barrow Alley: Receive files into a folder** always asks for a folder, and an explicit choice does not change the configured default.
+
+After the sender accepts the request, choose files from the disclosed list. Once the connection dialogue is open, it remains open if discovery or direct connection fails so that you can review the status and try another number. A retry keeps the starting command mode and destination. If a configured folder is no longer present, Barrow Alley shows a notice and stops instead of using the Vault root.
 
 When a destination name already exists, Barrow Alley offers to save with another name, overwrite, skip, or cancel. It does not overwrite a Vault file without an explicit choice. The received size and SHA-256 digest are checked before a complete file is saved.
 
 ## Browser client
 
-To send files from this device to an Obsidian Vault—or receive files here from a Vault—[open Barrow Alley for the web](https://vrtmrz.github.io/barrow-alley/). The current version of Chrome is recommended.
+To send files or text from this device to an Obsidian Vault—or receive files here from a Vault—[open Barrow Alley for the web](https://vrtmrz.github.io/barrow-alley/). The current version of Chrome is recommended.
 
 This repository contains the browser client under `test/web`. It also serves as a small interoperability harness and is built separately from the Obsidian plug-in.
 
